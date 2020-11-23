@@ -26,20 +26,6 @@ public class SftpHelper {
         }
     }
 
-    public static SftpPooledFactory createSftpPooledFactory(){
-        if (!isInit){
-            init(new SftpPoolConfig());
-        }
-        return pooledFactory;
-    }
-
-    public static SftpPool createSftpPool(){
-        if (!isInit){
-            init(new SftpPoolConfig());
-        }
-        return pool;
-    }
-
 
     /**
      * 通过sftp链接配置对象创建一个Sftp客户端

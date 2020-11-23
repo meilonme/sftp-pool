@@ -285,8 +285,7 @@ public class FileUtil {
      */
     public static String inputStreamToString(InputStream input) {
         StringBuilder stringBuilder = new StringBuilder();
-        BufferedReader bf = new BufferedReader(new InputStreamReader(input));
-        try {
+        try(BufferedReader bf = new BufferedReader(new InputStreamReader(input))) {
 
             String line = null;
 
@@ -297,17 +296,9 @@ public class FileUtil {
 
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                bf.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
 
         return stringBuilder.toString();
     }
-
-
 
 }

@@ -1,7 +1,6 @@
 package me.meilon.sftp.client;
 
 
-import com.jcraft.jsch.ChannelSftp;
 import me.meilon.sftp.core.SftpConnect;
 import me.meilon.sftp.core.SftpPool;
 import me.meilon.sftp.core.conf.SftpConnConfig;
@@ -12,13 +11,12 @@ import me.meilon.sftp.core.conf.SftpConnConfig;
  * 操作完成后再重新返还给连接池
  * @author meilon
  */
-public class SftpClient extends ChannelSftp implements ISftpClient {
+public class SftpClient implements ISftpClient {
 
     private final SftpPool pool;
     private final SftpConnConfig conf;
 
 
-    
     public SftpClient(final SftpConnConfig conf, SftpPool pool) {
         this.pool = pool;
         this.conf = conf;

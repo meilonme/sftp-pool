@@ -3,7 +3,7 @@ package me.meilon.sftp.core;
 
 import com.jcraft.jsch.*;
 import lombok.extern.slf4j.Slf4j;
-import me.meilon.sftp.core.exception.SftpConnectException;
+import me.meilon.sftp.core.conf.SftpMode;
 import me.meilon.sftp.core.utils.Base64Util;
 import me.meilon.sftp.core.utils.FileUtil;
 
@@ -27,7 +27,7 @@ public class SftpConnect implements Closeable {
     /**
      * 用于标识此链接是否通过链接池创建
      */
-    private boolean isPool;
+    private boolean isPool = false;
 
     protected SftpConnect(String ftpName, ChannelSftp sftp) {
         this.ftpName = ftpName;
@@ -42,7 +42,7 @@ public class SftpConnect implements Closeable {
         return isPool;
     }
 
-    public void setPool(boolean pool) {
+    protected void setPool(boolean pool) {
         isPool = pool;
     }
 
@@ -51,17 +51,16 @@ public class SftpConnect implements Closeable {
     }
 
 
-    public void connect(){
-        try {
-            Session session = sftp.getSession();
-            if (!session.isConnected()){
-                session.connect();
-            }
-            if (!sftp.isConnected()){
-                sftp.connect();
-            }
-        } catch (JSchException e) {
-            throw new SftpConnectException(e);
+    /**
+     * 重新链接
+     */
+    public void connect() throws JSchException {
+        Session session = sftp.getSession();
+        if (!session.isConnected()){
+            session.connect();
+        }
+        if (!sftp.isConnected()){
+            sftp.connect();
         }
     }
 
@@ -72,11 +71,55 @@ public class SftpConnect implements Closeable {
      * false: 连接断开
      */
     public boolean isConnected() {
-        if (sftp.isConnected()) {
-            return true;
+        return sftp.isConnected();
+    }
+
+    /**
+     * 判断目标是否是目录
+     * @param directory 目录路径
+     * @return 结果
+     */
+    public  boolean isDir(String directory) throws SftpException {
+        SftpATTRS attrs = getAttrs(directory);
+        return attrs.isDir();
+    }
+
+    /**
+     * 判断远程目标是否是文件
+     * @param filePath 目标文件路径
+     * @return 结果
+     */
+    public boolean isFile(String filePath) throws SftpException {
+        SftpATTRS attrs = getAttrs(filePath);
+        return !attrs.isDir() && !attrs.isLink();
+    }
+
+    /**
+     * 判断目录或文件是否存在
+     * @param path 目标路径
+     * @return 结果
+     */
+    public boolean isExist(String path) throws SftpException {
+        SftpATTRS attrs = getAttrs(path);
+        return  (attrs != null);
+    }
+
+    private static final String NO_SUCH_FILE = "no such file";
+    /**
+     * 获取远程文件或目录属性
+     * @param path 目标路径
+     * @return 文件或目录属性
+     * 注: 如果文件或目录不存在则返回 null
+     */
+    public SftpATTRS getAttrs(String path) throws SftpException {
+        try {
+            return sftp.lstat(path);
+        } catch (SftpException e) {
+            if (NO_SUCH_FILE.equals(e.getMessage().toLowerCase())) {
+                return null;
+            }
+            throw e;
         }
-        log.info("SFTP {} 连接被断开", ftpName);
-        return false;
     }
 
     /**
@@ -84,75 +127,243 @@ public class SftpConnect implements Closeable {
      *
      * @return 当前目录字串
      */
-    public String pwd() {
-        try {
-            return sftp.pwd();
-        } catch (SftpException e) {
-            e.printStackTrace();
-        }
-        return null;
+    public String pwd() throws SftpException {
+        return sftp.pwd();
     }
 
+    /**
+     * 切换目录
+     * @param path 路径
+     * @author RenZhengGuo 2016年8月13日 下午5:29:37
+     */
+    public void cd(String path) throws SftpException {
+        if (isDir(path)) {
+            sftp.cd(path);
+        }
+    }
 
     /**
-     * 功能说明:打开指定目录
-     *
-     * @param directory
-     * @return boolean
+     * 创建目录
+     * @param directory 目标路径
      */
-    public  boolean openDir(String directory) {
-        if (!isConnected()){
-            return false;
+    public void mkdir(String directory) throws SftpException {
+        if (!isDir(directory)) {
+            sftp.mkdir(directory);
         }
+    }
+
+    /**
+     * 创建多级目录
+     * @param createPath 目标路径
+     */
+    public  void mkdirs(String createPath) throws SftpException {
+        if (isDir(createPath)) {
+            return;
+        }
+        // mkdir 命令不能创建多级目录, 所以要先根据文件分隔符分割成单个目录组
+        String[] pathArry = createPath.trim().split(FileUtil.DEF_LINE_SEPARATOR);
+        StringBuilder filePath = null;
+        // 如果是绝对路径会以"/"开头, 此时分割出的数组首位是空串应替换成"/"
+        if (pathArry[0].isEmpty()) {
+            filePath = new StringBuilder(FileUtil.DEF_LINE_SEPARATOR);
+        } else {
+            filePath = new StringBuilder();
+        }
+        for (String pathNode : pathArry) {
+            if (pathNode == null || pathNode.isEmpty()) {
+                continue;
+            }
+            filePath.append(pathNode);
+            String path = filePath.toString();
+            mkdir(path);
+            filePath.append(FileUtil.DEF_LINE_SEPARATOR);
+        }
+    }
+
+    /**
+     * 给目录授权
+     * @param permsion 授权值
+     * @param directory 目标路径
+     */
+    public  void chmod(int permsion, String directory) throws SftpException {
+        sftp.chmod(permsion, directory);
+    }
+
+    /**
+     * 重命名文件或者目录 ,移动文件或者目录
+     *
+     * @param oldpath 旧文件或目录
+     * @param newpath 新文件或目录
+     */
+    public void rename(String oldpath, String newpath) throws SftpException {
+        sftp.rename(oldpath, newpath);
+    }
+
+    /**
+     * 功能说明:打开指定目录, 如果目录不存在则创建
+     *
+     * @param directory 目标路径
+     */
+    public void openDir(String directory) throws SftpException {
         if (directory == null || directory.isEmpty()) {
-            log.error("sftp 打开目录失败: 目录名不能为空!");
-            return false;
+            throw new NullPointerException("directory is null");
         }
-        try {
-            if (!isDirExist(directory)) {
-                sftp.mkdir(directory);
-            }
-            sftp.cd(directory);
-            return true;
-        } catch (SftpException e) {
-            log.error("sftp 打开目录错误: ", e);
-            return false;
+        if (!isDir(directory)) {
+            mkdirs(directory);
         }
+        sftp.cd(directory);
     }
 
     /**
-     * 上传文件
-     * 上传本地文件
+     * 改变目录用户组
      *
-     * @param directory  上传的目录
-     * @param uploadFile 要上传的文件名
+     * @param gid 组名
+     * @param path 文件或目录的路径
      */
-    public boolean upload(String directory, String uploadFile) {
-        log.info("sftp upload file {} to {}", uploadFile, directory);
+    public void chgrp(Integer gid, String path) throws SftpException {
+        sftp.chgrp(gid, path);
+    }
 
-        boolean status = false;
-        File file = new File(uploadFile);
+    /**
+     * 删除文件
+     * 删除当前目录下的文件
+     *
+     * @param deleteFile 要删除的文件
+     */
+    public void delete(String deleteFile) throws SftpException {
+        sftp.rm(deleteFile);
+    }
 
-        try(FileInputStream fileInputStream = new FileInputStream(file)) {
-            boolean isOpenDir = this.openDir(directory);
+    /**
+     * 删除文件
+     * 不能使用全路径删除, 先CD到文件所在目录, 删除完毕后在CD回原目录
+     *
+     * @param directory  要删除文件所在目录
+     * @param deleteFile 要删除的文件
+     */
+    public void delete(String directory, String deleteFile) throws SftpException {
+        String pwd = pwd();
+        sftp.cd(directory);
+        sftp.rm(deleteFile);
+        sftp.cd(pwd);
+    }
 
-            log.info("访问文件夹是否成功{}", isOpenDir);
-            if (!isOpenDir) {
-                log.error("上传文件失败, 无法访问目标文件夹!");
-                return false;
-            }
-            log.info("文件开始上传文件流,文件名: {}", file.getName());
-            sftp.put(fileInputStream, file.getName());
-            status = true;
+    /**
+     * 将本地文件名为 filePath 的文件上传到目标服务器，
+     *
+     * @param filePath 本地文件路径
+     * @param remotePath 远程文件路径
+     *                   注: remotePath 可以是目录, 也可以是文件
+     *                   如果是目录则按照原文件名上传至 remotePath 目录
+     *                   如果是文件则按照指定的文件名上传
+     */
+    public void uploadFile(String filePath, String remotePath) throws SftpException {
+        sftp.put(filePath, remotePath);
+    }
 
-        } catch (IOException | SftpException e) {
-            e.printStackTrace();
+    /**
+     * 按照指定模式上传文件
+     * @param filePath 本地文件路径
+     * @param remotePath 远程文件路径
+     * @param mode 文件传输模式
+     * @see SftpMode
+     */
+    public void uploadFile(String filePath, String remotePath, SftpMode mode) throws SftpException {
+        sftp.put(filePath, remotePath, mode.getMode());
+    }
+
+    /**
+     * 文件上传
+     * 提供回调函数实时反馈上传进度
+     * @param filePath 本地文件路径
+     * @param remotePath 远程路径
+     * @param monitor 回调函数
+     */
+    public void uploadFile(String filePath, String remotePath, SftpProgressMonitor monitor) throws SftpException {
+        sftp.put(filePath, remotePath, monitor);
+    }
+
+    /**
+     * 上传文件流到远程服务器
+     * @param fileIo 文件流
+     * @param remoteFilePath 远程文件路径, 必须是包含文件名的完整路径, 不能是目录
+     * @throws SftpException
+     */
+    public void uploadFile(InputStream fileIo, String remoteFilePath) throws SftpException {
+        if (isDir(remoteFilePath)){
+            throw new IllegalAccessError(remoteFilePath + "is directory");
         }
-        return status;
+        sftp.put(fileIo, remoteFilePath);
     }
 
 
+    /**
+     * 上传文件流到远程目录
+     * 该方法返回一个输出流，可以向该输出流中写入数据，最终将数据传输到目标服务器，目标文件名为 remoteFilePath
+     * remoteFilePath 不能为目录。
+     * 采用默认的传输模式：OVERWRITE
+     * @param  remoteFilePath 远程文件地址
+     * @return 文件输出流
+     */
+    public OutputStream uploadFile(String remoteFilePath) throws SftpException {
+        if (isDir(remoteFilePath)) {
+            throw new IllegalAccessError("remoteFilePath is not fount");
+        }
+        return sftp.put(remoteFilePath);
+    }
 
+    /**
+     * 上传文件到指定的远程目录
+     * @param localFile 本地文件
+     * @param remoteFilePath 远程文件地址
+     */
+    public void uploadFile(File localFile, String remoteFilePath) throws SftpException {
+        if (!localFile.isFile()){
+            throw new IllegalAccessError("localFile is not found");
+        }
+        FileInputStream in = null;
+        try {
+            in = new FileInputStream(localFile);
+            sftp.put(in,remoteFilePath);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    /**
+     * 批量上传本地目录下的文件到远程目录
+     * @param directory 本地目录
+     * @param remoteDir 远程目录
+     */
+    public void uploadFiles(String directory, String remoteDir) throws SftpException {
+        uploadFiles(directory,remoteDir,null);
+    }
+
+    /**
+     * 批量上传本地目录下的文件到远程目录
+     * @param directory 本地目录
+     * @param remoteDir 远程目录
+     * @param filter 过滤器, 可以为空, 为空则不做过滤
+     */
+    public void uploadFiles(String directory, String remoteDir, FileFilter filter) throws SftpException {
+        File filePath = new File(directory);
+        if (!filePath.isDirectory() || !filePath.exists()){
+            return;
+        }
+        File[] files = null;
+        if (filter == null){
+            files = filePath.listFiles();
+        }
+        else{
+            files = filePath.listFiles(filter);
+        }
+        if (files != null && files.length > 0){
+            for (File file : files) {
+                uploadFile(file,remoteDir);
+            }
+        }
+    }
     /**
      * 上传图片
      * 上传base64Str 格式的图片
@@ -161,107 +372,34 @@ public class SftpConnect implements Closeable {
      * @param directory 目录，必填(device=设备图片目录，inspection=巡检图片目录)
      * @param fileName  文件名可以为空（扩展名建议jpg）
      */
-    public  String uploadFile(String base64Str, String directory, String fileName) {
+    public  String uploadFile(String base64Str, String directory, String fileName)
+            throws IOException, SftpException {
+
         if (base64Str == null || base64Str.isEmpty()) {
-            throw new IllegalArgumentException("图片 base64 编码不能为空");
+            throw new NullPointerException("base64 is null");
         }
 
         try (InputStream inputStream = Base64Util.baseToInputStream(base64Str)) {
 
-            if (this.openDir(directory)) {
-                if (fileName == null || fileName.isEmpty()) {
-                    fileName = UUID.randomUUID().toString().toUpperCase(Locale.ENGLISH) + ".jpg";
-                }
-                // 图片服务器目录：device=设备图片目录，inspection=巡检图片目录，文件名=UUID
-                // 目标文件名
-                String dst = FileUtil.unite(directory, fileName);
-                sftp.put(inputStream, dst, ChannelSftp.OVERWRITE);
-
+//            this.openDir(directory);
+            if (fileName == null || fileName.isEmpty()) {
+                fileName = UUID.randomUUID().toString().toUpperCase(Locale.ENGLISH) + ".jpg";
             }
-        } catch (Exception e) {
-            log.error("上传图片错误: ", e);
+            // 图片服务器目录：device=设备图片目录，inspection=巡检图片目录，文件名=UUID
+            // 目标文件名
+            String dst = FileUtil.unite(directory, fileName);
+            sftp.put(inputStream, dst, ChannelSftp.OVERWRITE);
         }
         return fileName;
     }
 
     /**
      * 下载文件
-     *
-     * @param directory    下载文件所在路径目录
-     * @param downFileName 下载的文件名称
-     * @param savePath     保存到本地的路径目录
+     * @param remoteFilePath 远程文件地址
+     * @param localFilePath 本地文件地址
      */
-    public  boolean download(String directory, String downFileName, String savePath) {
-
-        log.info("sftp 下载 {} to {}", FileUtil.unite(directory, downFileName), savePath);
-        boolean status = false;
-        File file = null;
-        FileOutputStream fileOutputStream = null;
-
-        try {
-            if (openDir(directory)) {
-                if (FileUtil.isExistDir(savePath)) {
-                    String saveFile = FileUtil.unite(savePath, downFileName);
-                    file = new File(saveFile);
-                    fileOutputStream = new FileOutputStream(file);
-                    sftp.get(downFileName, fileOutputStream);
-                    status = true;
-                }
-            }
-        } catch (Exception e) {
-            log.error("sftp 下载 {} 失败: {}", downFileName, e);
-            this.close();
-        } finally {
-            try {
-                if (null != fileOutputStream) {
-                    fileOutputStream.close();
-                }
-            } catch (Exception e) {
-                log.error("sftp 下载文件, 关闭输出流失败");
-                status = false;
-            }
-        }
-        return status;
-    }
-
-    /**
-     * 下载文件
-     *
-     * @param directory    下载目录
-     * @param downloadFile 下载的文件名称
-     * @param localFile    本地文件名称
-     * @param saveDir      存在本地的目录
-     */
-    public  boolean download(String directory, String downloadFile, String localFile, String saveDir)
-            throws IOException {
-
-        boolean status = false;
-        File file = null;
-        FileOutputStream fileOutputStream = null;
-
-        try {
-            if (openDir(directory)) {
-                File fileDir = new File(saveDir);
-
-                if (isExistsDir(fileDir)) {
-
-                    file = new File(saveDir + localFile);
-                    fileOutputStream = new FileOutputStream(file);
-                    sftp.get(downloadFile, fileOutputStream);
-                    status = true;
-                }
-            }
-
-        } catch (Exception e) {
-            log.error("", e);
-            this.close();
-        } finally {
-            if (null != fileOutputStream) {
-                fileOutputStream.close();
-            }
-        }
-
-        return status;
+    public void download(String remoteFilePath, String localFilePath) throws SftpException {
+        sftp.get(remoteFilePath, localFilePath);
     }
 
     /**
@@ -304,250 +442,31 @@ public class SftpConnect implements Closeable {
     }
 
     /**
-     * 判断指定文件夹是否存在, 不存在则创建
-     *
-     * @param file 指定文件夹
-     * @author RenZhengGuo 2016年8月13日 下午5:29:37
-     */
-    private  boolean isExistsDir(File file) {
-        boolean mkdir = false;
-        // 如果文件夹不存在则创建
-        if (!file.exists() && !file.isDirectory()) {
-            log.info("目录不存在，创建目录");
-            mkdir = file.mkdirs();
-        }
-        return mkdir;
-    }
-
-    /**
-     * @param file
-     * @author RenZhengGuo 2016年8月13日 下午5:29:37
-     */
-    public  void cd(String file) {
-        // 如果文件夹不存在则创建
-        try {
-            sftp.cd(file);
-        } catch (SftpException e) {
-            createDir(file);
-//            chmod(Integer.parseInt("777", 8), file);
-        }
-
-    }
-
-    /**
-     * 创建目录
-     *
-     * @param file
-     * @return
-     */
-    public  boolean mkdir(String file) {
-        if (isDirExist(file)) {
-            return true;
-        }
-        try {
-            sftp.mkdir(file);
-            return true;
-        } catch (SftpException e) {
-            log.error("创建文件夹出错！ ", e);
-            return false;
-        }
-    }
-
-    /**
-     * 给目录授权
-     *
-     * @param permsion
-     * @param file
-     */
-    public  void chmod(int permsion, String file) {
-        try {
-            sftp.chmod(permsion, file);
-        } catch (SftpException e) {
-            log.info("为文件：{}授权失败！", file);
-        }
-    }
-
-    /**
-     * 创建一个文件目录
-     */
-    public  void createDir(String createpath) {
-        try {
-            if (isDirExist(createpath)) {
-                sftp.cd(createpath);
-                return;
-            }
-            // mkdir 命令不能创建多级目录, 所以要先根据文件分隔符分割成单个目录组
-            String[] pathArry = createpath.trim().split(FileUtil.DEF_LINE_SEPARATOR);
-            StringBuilder filePath = null;
-            // 如果是绝对路径会以"/"开头, 此时分割出的数组首位是空串应替换成"/"
-            if (pathArry[0].isEmpty()) {
-                filePath = new StringBuilder(FileUtil.DEF_LINE_SEPARATOR);
-            } else {
-                filePath = new StringBuilder();
-            }
-            for (String pathNode : pathArry) {
-                if (pathNode == null || pathNode.isEmpty()) {
-                    continue;
-                }
-                filePath.append(pathNode);
-                String path = filePath.toString();
-
-                if (!isDirExist(path)) {
-                    sftp.mkdir(path);
-                }
-                filePath.append(FileUtil.DEF_LINE_SEPARATOR);
-            }
-            sftp.cd(createpath);
-        } catch (SftpException e) {
-            log.info("创建路径错误：" + createpath);
-        }
-    }
-
-    /**
-     * 判断目录是否存在
-     */
-    public  boolean isDirExist(String directory) {
-        boolean isDirExistFlag = false;
-        try {
-            SftpATTRS attrs = sftp.lstat(directory);
-            isDirExistFlag = true;
-            return attrs.isDir();
-        } catch (Exception e) {
-            if ("no such file".equals(e.getMessage().toLowerCase())) {
-                isDirExistFlag = false;
-            } else {
-                this.close();
-            }
-        }
-        return isDirExistFlag;
-    }
-
-    /**
-     * 判断文件是否存在
-     */
-    public  boolean fileExist(String directory, String fileName) {
-        boolean isDirExistFlag = false;
-        try {
-            Vector<ChannelSftp.LsEntry> vector = sftp.ls(directory);
-            if (vector != null && !vector.isEmpty()) {
-                Iterator<ChannelSftp.LsEntry> iterator = vector.iterator();
-                while (iterator.hasNext()) {
-                    ChannelSftp.LsEntry f = iterator.next();
-                    if (f.getAttrs().isDir()) {
-                        continue;
-                    }
-                    if (fileName.equals(f.getFilename())) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        } catch (Exception e) {
-            if ("no such file".equals(e.getMessage().toLowerCase())) {
-                isDirExistFlag = false;
-            } else {
-                this.close();
-            }
-        }
-        return isDirExistFlag;
-    }
-
-    /**
-     * 删除文件
-     * 不能使用全路径删除, 先CD到文件所在目录, 删除完毕后在CD回原目录
-     *
-     * @param directory  要删除文件所在目录
-     * @param deleteFile 要删除的文件
-     */
-    public  boolean delete(String directory, String deleteFile) {
-
-        checkClient();
-        log.info("sftp del {}/{}", directory, deleteFile);
-        String pwd = pwd();
-        boolean status = false;
-        try {
-
-            sftp.cd(directory);
-            sftp.rm(deleteFile);
-            status = true;
-            sftp.cd(pwd);
-
-        } catch (Exception e) {
-
-            log.error("sftp 删除文件错误: ", e);
-            this.close();
-        }
-        return status;
-    }
-
-    /**
-     * 删除文件
-     * 删除当前目录下的文件
-     *
-     * @param deleteFile 要删除的文件
-     */
-    public  boolean delete(String deleteFile) {
-
-        checkClient();
-        log.info("sftp del {}", deleteFile);
-        boolean status = false;
-        try {
-            sftp.rm(deleteFile);
-            status = true;
-
-        } catch (Exception e) {
-
-            log.error("sftp 删除文件错误: ", e);
-            this.close();
-        }
-        return status;
-    }
-
-    /**
      * 列出指定目录下的文件
      * 失败时返回空list
      *
      * @param directory 要列出的目录
      * @return 文件名列表
      */
-    public List<String> listFiles(String directory) {
-
-        checkClient();
-        log.info("sftp ls {}", directory);
+    public List<String> listFileNames(String directory) throws SftpException {
 
         List<String> ftpFileNameList = new ArrayList<>();
 
         if (directory != null && !directory.isEmpty()) {
-            try {
-                Vector<ChannelSftp.LsEntry> sftpFile = sftp.ls(directory);
-                for (ChannelSftp.LsEntry item : sftpFile) {
-                    ftpFileNameList.add(item.getFilename());
-                }
-            } catch (SftpException e) {
-                log.error("sftp 获取文件列表错误! {}", e.getMessage());
-                this.close();
+            Vector<ChannelSftp.LsEntry> sftpFile = sftp.ls(directory);
+            for (ChannelSftp.LsEntry item : sftpFile) {
+                ftpFileNameList.add(item.getFilename());
             }
         }
         return ftpFileNameList;
     }
 
-
-    /**
-     * 改变目录用户组
-     *
-     * @param gid
-     * @param path
-     * @return boolean
-     */
-    public  boolean chgrp(Integer gid, String path) {
-        try {
-            sftp.chgrp(gid, path);
-            return true;
-        } catch (SftpException e) {
-            log.info("改变用户组失败:{}", e.getMessage());
-            return false;
+    public List<ChannelSftp.LsEntry> listFiles(String directory) throws SftpException {
+        if (directory == null || directory.isEmpty()) {
+            throw new IllegalAccessError("directory is null!");
         }
-
+        Vector<ChannelSftp.LsEntry> sftpFile = sftp.ls(directory);
+        return new ArrayList<>(sftpFile);
     }
 
     /**
@@ -557,37 +476,10 @@ public class SftpConnect implements Closeable {
      * @param filePath 要打开的文件名
      * @return io流
      */
-    public  InputStream openFile(String filePath) {
-        log.info("sftp open file {}", filePath);
-        InputStream inputStream = null;
-        try {
-            inputStream = sftp.get(filePath);
-            return inputStream;
-        } catch (SftpException e) {
-            log.error("打开文件错误: ", e);
-            this.close();
-            return null;
-        }
+    public InputStream openFile(String filePath) throws SftpException {
+
+        return sftp.get(filePath);
     }
-
-    /**
-     * 重命名文件或者目录 ,移动文件或者目录
-     *
-     * @param oldpath 旧文件或目录
-     * @param newpath 新文件或目录
-     */
-    public  boolean rename(String oldpath, String newpath) {
-        log.info("sftp mv {} {}", oldpath, newpath);
-        try {
-            sftp.rename(oldpath, newpath);
-            return true;
-        } catch (Exception e) {
-            log.error("SFTP移动文件错误: ", e);
-            return false;
-        }
-    }
-
-
 
     /**
      * 复制文件, 复制完成后文件名不变
@@ -595,7 +487,6 @@ public class SftpConnect implements Closeable {
      * @param fromPath 文件所在路径
      * @param toPath   要复制到的目标路径
      * @param fileName 文件名
-     * @throws SftpException,IOException ""
      */
     public  void copyfile(String fromPath, String toPath, String fileName)
             throws SftpException, IOException {
@@ -611,43 +502,15 @@ public class SftpConnect implements Closeable {
      *
      * @param from 原始文件路径, 必须包含文件名
      * @param to   目标文件路径, 必须包含文件名
-     * @throws SftpException,IOException ""
      */
-    public  void copyfile(String from, String to) throws SftpException, IOException {
-
-        log.info("sftp copy file {} to {}", from, to);
-        InputStream tInputStream = null;
-
-        ByteArrayOutputStream baos = null;
-        InputStream nInputStream = null;
-        try {
-            tInputStream = sftp.get(from);
-
-            //拷贝读取到的文件流
-            baos = new ByteArrayOutputStream();
-
-            byte[] buffer = new byte[1024];
+    public void copyfile(String from, String to) throws SftpException, IOException {
+        try(InputStream in = sftp.get(from);
+            OutputStream os = sftp.put(to)) {
             int len;
-            while ((len = tInputStream.read(buffer)) > -1) {
-                baos.write(buffer, 0, len);
+            while (-1 < (len = in.read())){
+                os.write(len);
             }
-            baos.flush();
-
-            nInputStream = new ByteArrayInputStream(baos.toByteArray());
-
-            sftp.put(nInputStream, to);
-        } catch (Exception e) {
-            log.error("sftp复制文件错误: ", e);
-        } finally {
-            if (null != nInputStream) {
-                nInputStream.close();
-            }
-            if (null != baos) {
-                baos.close();
-            }
-            if (null != tInputStream) {
-                tInputStream.close();
-            }
+            os.flush();
         }
     }
 
@@ -655,7 +518,7 @@ public class SftpConnect implements Closeable {
      * 检查连接状态, 连接断开则自动重连
      * 重连失败抛出异常
      */
-    public void checkClient() {
+    public void checkClient() throws JSchException {
         if (!this.isConnected()) {
             this.connect();
         }
