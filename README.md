@@ -1,6 +1,7 @@
 # sftp-pool
 
 https://github.com/meilonme/sftp-pool
+https://issues.sonatype.org/browse/OSSRH-63177
 
 一款基于apache commons-pool2  sftp 连接池
 
