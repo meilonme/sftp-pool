@@ -5,7 +5,7 @@
 
     <parent>
         <artifactId>sftp-pool</artifactId>
-        <groupId>me.meilon</groupId>
+        <groupId>me.meilon.sftp</groupId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
@@ -17,7 +17,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>me.meilon</groupId>
+            <groupId>me.meilon.sftp</groupId>
             <artifactId>sftp-pool-core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
