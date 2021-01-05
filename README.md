@@ -20,7 +20,7 @@ https://issues.sonatype.org/browse/OSSRH-63177
             List<ChannelSftp.LsEntry> files =  sftp.listFiles("/data/");
             for (ChannelSftp.LsEntry file : files) {
 
-            System.out.println(file.getFilename());
+                System.out.println(file.getFilename());
             }
         } catch (Exception e) {
             e.printStackTrace();

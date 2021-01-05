@@ -6,12 +6,11 @@
     <parent>
         <artifactId>sftp-pool</artifactId>
         <groupId>me.meilon.sftp</groupId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>0.0.2</version>
     </parent>
-
     <artifactId>sftp-pool-client</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
     <name>${project.artifactId}</name>
+    <packaging>jar</packaging>
 
 
 

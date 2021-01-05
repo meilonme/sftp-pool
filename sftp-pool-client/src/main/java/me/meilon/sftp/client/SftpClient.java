@@ -23,19 +23,14 @@ public class SftpClient implements ISftpClient {
     }
     
 
-    public void testRun(){
-        System.out.println("..........");
+    public String pwd(){
+        String pwd = null;
         try(SftpConnect bean = pool.borrowObject(conf)){
-            if (!bean.isConnected()){
-                System.out.println("sftp未链接");
-            }
-            else{
-                String pwd = bean.pwd();
-                System.out.println(pwd);
-            }
+            pwd = bean.pwd();
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return pwd;
     }
 
 }
