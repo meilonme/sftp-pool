@@ -4,10 +4,16 @@ http://sftp.meilon.me/
 
 https://github.com/meilonme/sftp-pool
 
-https://issues.sonatype.org/browse/OSSRH-63177
-
 一款基于apache commons-pool2  sftp 连接池
 
+已发布到 MAVEN
+```xml
+<dependency>
+  <groupId>me.meilon.sftp</groupId>
+  <artifactId>sftp-pool-core</artifactId>
+  <version>0.0.3</version>
+</dependency>
+```
 
 ### 使用帮助
 通过连接池创建一个sftp链接
