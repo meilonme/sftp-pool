@@ -23,20 +23,31 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, SftpConnect> {
 
     /**
-     * 记录sftp链接的配置数据
+     * sftp链接的配置数据
      */
     private final Map<String, SftpConnConfig> connConfigMap;
+    /**
+     * sftp 链接池配置
+     */
     private SftpPoolConfig sftpPoolConfig;
+    /**
+     * sftp 连接池
+     */
     private volatile static SftpPool pool;
 
-    private static final Properties SSH_CONFIG;
-    static {
-        SSH_CONFIG = new Properties();
-        SSH_CONFIG.put("StrictHostKeyChecking", "no");
+
+
+    public SftpPooledFactory(){
+        connConfigMap = new ConcurrentHashMap<>(16);
     }
 
-    protected SftpPooledFactory(){
-        connConfigMap = new ConcurrentHashMap<>(16);
+    public SftpPooledFactory(Map<String, SftpConnConfig> connConfigMap){
+        this.connConfigMap = connConfigMap;
+    }
+
+    public SftpPooledFactory(Map<String, SftpConnConfig> connConfigMap, SftpPoolConfig sftpPoolConfig){
+        this.connConfigMap = connConfigMap;
+        this.sftpPoolConfig = sftpPoolConfig;
     }
 
 
@@ -56,9 +67,11 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
     public static SftpConnect createConnect(String host, Integer port, String user, String password, String sftpName){
         JSch jsch = new JSch();
         try {
+            Properties sshConfig = new Properties();
+            sshConfig.put("StrictHostKeyChecking", "no");
             Session session = jsch.getSession(user, host, port);
             session.setPassword(password);
-            session.setConfig(SSH_CONFIG);
+            session.setConfig(sshConfig);
             session.connect();
             ChannelSftp channel = (ChannelSftp) session.openChannel("sftp");
             channel.connect();
@@ -82,6 +95,26 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
     }
 
     /**
+     * 单例模式创建 sftp 链接池
+     * 如果在创建 工厂的时候已经设置了连接池配置则使用设置的连接池配置
+     * 如果没有设置则使用默认值
+     * @return sftp链接池
+     */
+    public SftpPool createSftpPool(){
+        if (pool == null){
+            synchronized (SftpPool.class){
+                if (pool == null){
+                    if (this.sftpPoolConfig == null){
+                        this.sftpPoolConfig = new SftpPoolConfig();
+                    }
+                    pool = new SftpPool(this, this.sftpPoolConfig);
+                }
+            }
+        }
+        return pool;
+    }
+
+    /**
      * 单例模式创建sftp链接池
      * @param sftpPoolConfig sftp链接池配置数据
      * @return sftp链接池
@@ -91,7 +124,7 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
             synchronized (SftpPool.class){
                 if (pool == null){
                     this.sftpPoolConfig = sftpPoolConfig;
-                    pool = new SftpPool(this, sftpPoolConfig);
+                    pool = new SftpPool(this, this.sftpPoolConfig);
                 }
             }
         }

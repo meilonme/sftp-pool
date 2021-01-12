@@ -3,11 +3,10 @@ package me.meilon.sftp.core.conf;
 import me.meilon.sftp.core.SftpConnect;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
 
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author meilon
+ * 链接池的基础配置
  */
 public class SftpPoolConfig extends GenericKeyedObjectPoolConfig<SftpConnect> {
 
@@ -26,10 +25,6 @@ public class SftpPoolConfig extends GenericKeyedObjectPoolConfig<SftpConnect> {
       */
     private int maxTotalPerKey = 8;
 
-    /**
-     * sftp 链接配置
-     */
-    private Map<String, SftpConnConfig> sftpConnConfigs = new HashMap<>();
 
 
     @Override
@@ -62,11 +57,4 @@ public class SftpPoolConfig extends GenericKeyedObjectPoolConfig<SftpConnect> {
         this.maxTotalPerKey = maxTotalPerKey;
     }
 
-    public Map<String, SftpConnConfig> getSftpConnConfigs() {
-        return sftpConnConfigs;
-    }
-
-    public void setSftpConnConfigs(Map<String, SftpConnConfig> sftpConnConfigs) {
-        this.sftpConnConfigs = sftpConnConfigs;
-    }
 }

@@ -4,6 +4,7 @@ package me.meilon.sftp.core;
 
 import me.meilon.sftp.core.conf.SftpConnConfig;
 import me.meilon.sftp.core.conf.SftpPoolConfig;
+import me.meilon.sftp.core.exception.SftpConfigException;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 
 
@@ -22,7 +23,7 @@ public class SftpPool {
 
     /**
      * 从连接池中获取一个sftp链接
-     * 注意: 使用完后需要自行调用 {@link #returnSftp(SftpConnect) } 方法交还
+     * 注意: 使用完后需要自行调用 {@link SftpPool#returnSftp(SftpConnect) } 方法交还
      * @param config sftp链接配置
      * @return sftp链接对象
      */
@@ -39,6 +40,42 @@ public class SftpPool {
             factory.setSftpConnConfig(config);
         }
         return pool.borrowObject(key);
+    }
+
+    /**
+     * 从连接池中获取一个sftp链接
+     * 通过事先定义的 sftpName 获取sftp链接
+     * 如果不存在则抛出异常
+     * 注意: 使用完后需要自行调用 {@link SftpPool#returnSftp(SftpConnect) } 方法交还
+     * @param sftpName 通过事先定义的 sftpName 获取sftp链接
+     * @return sftp链接对象
+     */
+    public SftpConnect borrowObject(String sftpName) throws Exception {
+        SftpPooledFactory factory = (SftpPooledFactory)pool.getFactory();
+        SftpConnConfig defConfig = factory.getConf(sftpName);
+        if (defConfig == null){
+            // 如果配置数据不存在或密码有变动则抛出异常
+            throw new SftpConfigException("SftpConnConfig is null");
+        }
+        return pool.borrowObject(sftpName);
+    }
+
+    /**
+     * 从连接池中获取一个sftp链接
+     * 如果不存在则创建一个新连接
+     *
+     * @param host sftp服务ip
+     * @param port 端口
+     * @param user 用户名
+     * @param password 密码
+     * @return sftp链接对象
+     */
+    public SftpConnect borrowObject(String host, Integer port,
+                                    String user, String password) throws Exception {
+        SftpPooledFactory factory = (SftpPooledFactory)pool.getFactory();
+        SftpConnConfig conf = new SftpConnConfig(host, port, user, password);
+        factory.setSftpConnConfig(conf);
+        return pool.borrowObject(conf.getSftpName());
     }
 
     /**

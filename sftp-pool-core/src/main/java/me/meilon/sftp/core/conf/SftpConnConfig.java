@@ -35,7 +35,12 @@ public class SftpConnConfig {
         this.port = port;
         this.userName = userName;
         this.password = password;
-        this.sftpName = sftpName;
+        if (sftpName != null && !sftpName.isEmpty()){
+            this.sftpName = sftpName;
+        }
+        else {
+            this.sftpName = userName + "@" + host + ":" + port;
+        }
     }
 
     public String getHost() {
