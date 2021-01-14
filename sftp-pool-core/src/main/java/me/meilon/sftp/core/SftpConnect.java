@@ -51,10 +51,15 @@ public class SftpConnect implements Closeable {
     }
 
 
+    public ChannelSftp getChannelSftp(){
+        return sftp;
+    }
+
     /**
      * 重新链接
      */
     public void connect() throws JSchException {
+        sftp.disconnect();
         Session session = sftp.getSession();
         if (!session.isConnected()){
             session.connect();
@@ -115,7 +120,7 @@ public class SftpConnect implements Closeable {
         try {
             return sftp.lstat(path);
         } catch (SftpException e) {
-            if (NO_SUCH_FILE.equals(e.getMessage().toLowerCase())) {
+            if (NO_SUCH_FILE.equalsIgnoreCase(e.getMessage())) {
                 return null;
             }
             throw e;
@@ -137,9 +142,7 @@ public class SftpConnect implements Closeable {
      * @author RenZhengGuo 2016年8月13日 下午5:29:37
      */
     public void cd(String path) throws SftpException {
-        if (isDir(path)) {
-            sftp.cd(path);
-        }
+        sftp.cd(path);
     }
 
     /**
@@ -477,7 +480,6 @@ public class SftpConnect implements Closeable {
      * @return io流
      */
     public InputStream openFile(String filePath) throws SftpException {
-
         return sftp.get(filePath);
     }
 
@@ -488,7 +490,7 @@ public class SftpConnect implements Closeable {
      * @param toPath   要复制到的目标路径
      * @param fileName 文件名
      */
-    public  void copyfile(String fromPath, String toPath, String fileName)
+    public void copyfile(String fromPath, String toPath, String fileName)
             throws SftpException, IOException {
 
         String formFilePath = FileUtil.unite(fromPath, fileName);
@@ -514,17 +516,7 @@ public class SftpConnect implements Closeable {
         }
     }
 
-    /**
-     * 检查连接状态, 连接断开则自动重连
-     * 重连失败抛出异常
-     */
-    public void checkClient() throws JSchException {
-        if (!this.isConnected()) {
-            this.connect();
-        }
-    }
-
-    public void exit(){
+    void exit(){
         sftp.exit();
     }
 

@@ -30,3 +30,4 @@ build/
 ### VS Code ###
 .vscode/
 /sftp-pool-core/src/test/
+/sftp-pool-core/src/main/resources/log4j.properties
