@@ -6,7 +6,7 @@
     <parent>
         <groupId>me.meilon.sftp</groupId>
         <artifactId>sftp-pool</artifactId>
-        <version>0.0.6</version>
+        <version>0.1</version>
     </parent>
     <artifactId>sftp-pool-client</artifactId>
     <name>${project.artifactId}</name>

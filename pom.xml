@@ -29,6 +29,7 @@
 
     <modules>
         <module>sftp-pool-core</module>
+        <module>sftp-pool-client</module>
     </modules>
 
     <properties>
