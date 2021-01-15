@@ -32,7 +32,7 @@ public class SftpPool extends GenericKeyedObjectPool<String, SftpConnect> {
         }
         SftpPooledFactory factory = (SftpPooledFactory)getFactory();
         String key = config.getSftpName();
-        SftpConnConfig defConfig = factory.getConf(key);
+        SftpConnConfig defConfig = factory.getSftpConnConf(key);
         if (defConfig == null ||
                 !defConfig.getPassword().equals(config.getPassword())){
             // 如果配置数据不存在或密码有变动则更新
@@ -70,7 +70,7 @@ public class SftpPool extends GenericKeyedObjectPool<String, SftpConnect> {
     @Override
     public SftpConnect borrowObject(String sftpName) throws Exception {
         SftpPooledFactory factory = (SftpPooledFactory)getFactory();
-        SftpConnConfig defConfig = factory.getConf(sftpName);
+        SftpConnConfig defConfig = factory.getSftpConnConf(sftpName);
         if (defConfig == null){
             // 如果配置数据不存在或密码有变动则抛出异常
             throw new SftpConfigException("SftpConnConfig is null");

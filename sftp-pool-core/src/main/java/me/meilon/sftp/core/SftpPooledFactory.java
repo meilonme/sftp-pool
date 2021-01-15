@@ -111,7 +111,7 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
             return;
         }
         if (!sftpConnect.isPool() || pool == null || sftpConnect.getFtpName() == null){
-            sftpConnect.exit();
+            sftpConnect.disconnect();
             return;
         }
         pool.returnSftp(sftpConnect);
@@ -124,7 +124,7 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
      * 如果没有设置则使用默认值
      * @return sftp链接池
      */
-    public SftpPool createSftpPool(){
+    public SftpPool getSftpPool(){
         if (pool == null){
             synchronized (SftpPool.class){
                 if (pool == null){
@@ -139,39 +139,24 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
     }
 
     /**
-     * 单例模式创建sftp链接池
-     * @param sftpPoolConfig sftp链接池配置数据
-     * @return sftp链接池
-     */
-    public SftpPool createSftpPool(SftpPoolConfig sftpPoolConfig){
-        if (pool == null){
-            synchronized (SftpPool.class){
-                if (pool == null){
-                    this.sftpPoolConfig = sftpPoolConfig;
-                    pool = new SftpPool(this, this.sftpPoolConfig.toGenericKeyedObjectPoolConfig());
-                }
-            }
-        }
-        return pool;
-    }
-
-    /**
      * 生成一个 sftp 链接配置对象
      * @param host sftp服务ip
      * @param port 端口
      * @param user 用户名
      * @param password 密码
      */
-    public SftpConnConfig setSftpConnConfig(String host, Integer port, String user, String password){
+    public SftpConnConfig setSftpConnConfig(String host, Integer port,
+                                            String user, String password){
         SftpConnConfig conf = new SftpConnConfig(host, port, user, password);
         setSftpConnConfig(conf);
         return conf;
     }
 
-    public void setSftpConnConfigMap(Map<String,SftpConnConfig> configMap){
-        for (Map.Entry<String, SftpConnConfig> item : configMap.entrySet()) {
-            connConfigMap.put(item.getKey(),item.getValue());
-        }
+    public SftpConnConfig setSftpConnConfig(String host, Integer port,
+                                            String user, String password, String sftpName){
+        SftpConnConfig conf = new SftpConnConfig(host, port, user, password, sftpName);
+        setSftpConnConfig(conf);
+        return conf;
     }
 
     /**
@@ -192,10 +177,24 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
         connConfigMap.put(key, config);
     }
 
-    public SftpConnConfig getConf(String key){
+    /**
+     * 根据key 获取sftp链接配置
+     * @param key
+     * @return
+     */
+    public SftpConnConfig getSftpConnConf(String key){
         return connConfigMap.get(key);
     }
 
+    /**
+     * 批量设置sftp链接配置
+     * @param configMap
+     */
+    public void setSftpConnConfigMap(Map<String,SftpConnConfig> configMap){
+        for (Map.Entry<String, SftpConnConfig> item : configMap.entrySet()) {
+            connConfigMap.put(item.getKey(),item.getValue());
+        }
+    }
 
     /**
      * 创建 sftpConnect 对象
@@ -269,7 +268,7 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
         if (p != null){
             SftpConnect sftp = p.getObject();
             if (sftp != null){
-                sftp.exit();
+                sftp.disconnect();
             }
             p.markAbandoned();
             super.destroyObject(key, p);

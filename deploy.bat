@@ -1,1 +1,1 @@
-mvn versions:update-child-modules clean deploy -P release
+mvn clean versions:update-child-modules deploy -P release

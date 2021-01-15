@@ -4,7 +4,6 @@ package me.meilon.sftp.core;
 import com.jcraft.jsch.*;
 import lombok.extern.slf4j.Slf4j;
 import me.meilon.sftp.core.conf.SftpMode;
-import me.meilon.sftp.core.utils.Base64Util;
 import me.meilon.sftp.core.utils.FileUtil;
 
 import java.io.*;
@@ -367,34 +366,6 @@ public class SftpConnect implements Closeable {
             }
         }
     }
-    /**
-     * 上传图片
-     * 上传base64Str 格式的图片
-     *
-     * @param base64Str base64编码必填（去掉"data:image/jpeg;base64,"头）
-     * @param directory 目录，必填(device=设备图片目录，inspection=巡检图片目录)
-     * @param fileName  文件名可以为空（扩展名建议jpg）
-     */
-    public  String uploadFile(String base64Str, String directory, String fileName)
-            throws IOException, SftpException {
-
-        if (base64Str == null || base64Str.isEmpty()) {
-            throw new NullPointerException("base64 is null");
-        }
-
-        try (InputStream inputStream = Base64Util.baseToInputStream(base64Str)) {
-
-//            this.openDir(directory);
-            if (fileName == null || fileName.isEmpty()) {
-                fileName = UUID.randomUUID().toString().toUpperCase(Locale.ENGLISH) + ".jpg";
-            }
-            // 图片服务器目录：device=设备图片目录，inspection=巡检图片目录，文件名=UUID
-            // 目标文件名
-            String dst = FileUtil.unite(directory, fileName);
-            sftp.put(inputStream, dst, ChannelSftp.OVERWRITE);
-        }
-        return fileName;
-    }
 
     /**
      * 下载文件
@@ -516,8 +487,8 @@ public class SftpConnect implements Closeable {
         }
     }
 
-    void exit(){
-        sftp.exit();
+    void disconnect(){
+        sftp.disconnect();
     }
 
     @Override
