@@ -85,7 +85,7 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
     }
     public static SftpConnect createConnect(String host, Integer port,
                                             String user, String password,
-                                            String sftpName) throws JSchException {
+                                            String id) throws JSchException {
         JSch jsch = new JSch();
         Properties sshConfig = new Properties();
         sshConfig.put("StrictHostKeyChecking", "no");
@@ -95,7 +95,9 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
         session.connect();
         ChannelSftp channel = (ChannelSftp) session.openChannel("sftp");
         channel.connect();
-        return new SftpConnect(sftpName, channel);
+
+        SftpConnConfig conf = new SftpConnConfig(host, port, user, password, id);
+        return new SftpConnect(conf, channel);
     }
 
 
@@ -104,13 +106,13 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
      * 此方法会判断sftp链接是否纳管到了连接池
      * 如果没有则直接关闭
      * 如果有则交还给连接池
-     * @param sftpConnect
+     * @param sftpConnect sftp链接对象
      */
     public static void closeSftp(SftpConnect sftpConnect){
         if (sftpConnect == null){
             return;
         }
-        if (!sftpConnect.isPool() || pool == null || sftpConnect.getFtpName() == null){
+        if (!sftpConnect.isPool() || pool == null || sftpConnect.getId() == null){
             sftpConnect.disconnect();
             return;
         }
@@ -152,9 +154,18 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
         return conf;
     }
 
+    /**
+     *
+     * @param host sftp服务ip
+     * @param port 端口
+     * @param user 用户名
+     * @param password 密码
+     * @param sftpId sftp的唯一id
+     * @return sftp链接配置对象
+     */
     public SftpConnConfig setSftpConnConfig(String host, Integer port,
-                                            String user, String password, String sftpName){
-        SftpConnConfig conf = new SftpConnConfig(host, port, user, password, sftpName);
+                                            String user, String password, String sftpId){
+        SftpConnConfig conf = new SftpConnConfig(host, port, user, password, sftpId);
         setSftpConnConfig(conf);
         return conf;
     }
@@ -168,7 +179,7 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
         if (config == null){
             throw new NullPointerException("SftpConnConfig is null!");
         }
-        String key = config.getSftpName();
+        String key = config.getId();
         SftpConnConfig oldConf = connConfigMap.get(key);
         if (oldConf != null &&
                 oldConf.getPassword().equals(config.getPassword())){
@@ -178,17 +189,8 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
     }
 
     /**
-     * 根据key 获取sftp链接配置
-     * @param key
-     * @return
-     */
-    public SftpConnConfig getSftpConnConf(String key){
-        return connConfigMap.get(key);
-    }
-
-    /**
      * 批量设置sftp链接配置
-     * @param configMap
+     * @param configMap sftp链接配置Map对象
      */
     public void setSftpConnConfigMap(Map<String,SftpConnConfig> configMap){
         for (Map.Entry<String, SftpConnConfig> item : configMap.entrySet()) {
@@ -197,20 +199,28 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
     }
 
     /**
+     * 根据 id 获取 sftp链接配置
+     * @param sftpId 指定sftp的唯一id
+     * @return sftp链接配置对象
+     */
+    public SftpConnConfig getSftpConnConf(String sftpId){
+        return connConfigMap.get(sftpId);
+    }
+
+
+    /**
      * 创建 sftpConnect 对象
-     * @param key
-     * @return
-     * @throws Exception
+     * @param sftpId 指定sftp的唯一id
+     * @return sftp链接对象
+     * @throws Exception 创建失败抛出异常
      */
     @Override
-    public SftpConnect create(String key) throws Exception {
-        SftpConnConfig conf = connConfigMap.get(key);
+    public SftpConnect create(String sftpId) throws Exception {
+        SftpConnConfig conf = connConfigMap.get(sftpId);
         if (conf == null){
             throw new SftpConfigException("get sftpConfig is null! ");
         }
-        SftpConnect conn = createConnect(conf.getHost(), conf.getPort(), conf.getUserName(), conf.getPassword());
-        conn.setFtpName(key);
-        return conn;
+        return createConnect(conf.getHost(), conf.getPort(), conf.getUserName(), conf.getPassword(), sftpId);
     }
 
     /**
@@ -232,12 +242,12 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
      * 此外在调用者从Pool获取一个"对象"时,也会检测"对象"的有效性,确保不能将"无效"的对象输出给调用者;
      * 当调用者使用完毕将"对象"归还到 Pool时,仍然会检测对象的有效性.所谓有效性,就是此"对象"的状态是否符合预期,是否可以对调用者直接使用;
      * 如果对象是Socket,那么它的有效性就是socket的通道是否畅通/阻塞是否超时等.
-     * @param key
-     * @param p
-     * @return
+     * @param sftpId 指定sftp的唯一id
+     * @param p 池化对象
+     * @return true 链接有效, false 链接无效
      */
     @Override
-    public boolean validateObject(String key, PooledObject<SftpConnect> p) {
+    public boolean validateObject(String sftpId, PooledObject<SftpConnect> p) {
         boolean res = false;
         if (p != null){
             SftpConnect bean = p.getObject();
@@ -246,7 +256,7 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
             }
             log.debug("IdleTimeMillis = {}", p.getIdleTimeMillis());
         }
-        log.debug("validateObject {} = {}", key, res);
+        log.debug("validateObject {} = {}", sftpId, res);
 
         return res;
     }
@@ -258,12 +268,12 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
      * 如果object是socket操作,那么此时socket必须关闭;
      * 如果object是文件流操作,那么此时"数据flush"且正常关闭.
      *
-     * @param key
-     * @param p
-     * @throws Exception
+     * @param sftpId 指定sftp的唯一id
+     * @param p 池化对象
+     * @throws Exception 销毁失败时抛出异常
      */
     @Override
-    public void destroyObject(String key, PooledObject<SftpConnect> p)
+    public void destroyObject(String sftpId, PooledObject<SftpConnect> p)
             throws Exception {
         if (p != null){
             SftpConnect sftp = p.getObject();
@@ -271,9 +281,9 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
                 sftp.disconnect();
             }
             p.markAbandoned();
-            super.destroyObject(key, p);
+            super.destroyObject(sftpId, p);
             log.debug("destroyObject {}, NumActive {}, NumIdle {}",
-                    key, pool.getNumActive(key), pool.getNumIdle(key));
+                    sftpId, pool.getNumActive(sftpId), pool.getNumIdle(sftpId));
         }
     }
 
@@ -283,14 +293,14 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
      * 比如可以在 activateObject方法中"重置"参数列表让调用者使用时感觉像一个"新创建"的对象一样;
      * 如果object是一个线程,可以在"激活"操作中重置"线程中断标记",或者让线程从阻塞中唤醒等;
      * 如果object是一个socket,那么可以在"激活操作"中刷新通道,或者对socket进行链接重建(假如socket意外关闭)等.
-     * @param key
-     * @param p
-     * @throws Exception
+     * @param sftpId 指定sftp的唯一id
+     * @param p 池化对象
+     * @throws Exception 激活失败时抛出异常
      */
     @Override
-    public void activateObject(String key, PooledObject<SftpConnect> p)
+    public void activateObject(String sftpId, PooledObject<SftpConnect> p)
             throws Exception {
-        super.activateObject(key, p);
+        super.activateObject(sftpId, p);
     }
 
     /**
@@ -299,14 +309,14 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
      * 如果object是一个socket,那么可以passivateObject中清除buffer,将socket阻塞;
      * 如果object是一个线程,可以在"钝化"操作中将线程sleep或者将线程中的某个对象wait.
      * 需要注意,activateObject和 passivateObject两个方法需要对应,避免死锁或者"对象"状态的混乱.
-     * @param key
-     * @param p
-     * @throws Exception
+     * @param sftpId 指定sftp的唯一id
+     * @param p 池化对象
+     * @throws Exception 钝化失败时抛出异常
      */
     @Override
-    public void passivateObject(String key, PooledObject<SftpConnect> p)
+    public void passivateObject(String sftpId, PooledObject<SftpConnect> p)
             throws Exception {
-        super.passivateObject(key, p);
+        super.passivateObject(sftpId, p);
     }
 
 }

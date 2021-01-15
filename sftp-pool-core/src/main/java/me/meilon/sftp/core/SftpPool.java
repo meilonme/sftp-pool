@@ -31,7 +31,7 @@ public class SftpPool extends GenericKeyedObjectPool<String, SftpConnect> {
             throw new NullPointerException("SftpConnConfig is null");
         }
         SftpPooledFactory factory = (SftpPooledFactory)getFactory();
-        String key = config.getSftpName();
+        String key = config.getId();
         SftpConnConfig defConfig = factory.getSftpConnConf(key);
         if (defConfig == null ||
                 !defConfig.getPassword().equals(config.getPassword())){
@@ -56,49 +56,61 @@ public class SftpPool extends GenericKeyedObjectPool<String, SftpConnect> {
         SftpPooledFactory factory = (SftpPooledFactory)getFactory();
         SftpConnConfig conf = new SftpConnConfig(host, port, user, password);
         factory.setSftpConnConfig(conf);
-        return borrowObject(conf.getSftpName());
+        return borrowObject(conf.getId());
     }
 
     /**
      * 从连接池中获取一个sftp链接
-     * 通过事先定义的 sftpName 获取sftp链接
+     * 通过事先定义的 sftpId 获取sftp链接
      * 如果不存在则抛出异常
      * 注意: 使用完后需要自行调用 {@link SftpPool#returnSftp(SftpConnect) } 方法交还
-     * @param sftpName 通过事先定义的 sftpName 获取sftp链接
+     * @param sftpId 通过事先定义的 sftpId 获取sftp链接
      * @return sftp链接对象
      */
     @Override
-    public SftpConnect borrowObject(String sftpName) throws Exception {
+    public SftpConnect borrowObject(String sftpId) throws Exception {
         SftpPooledFactory factory = (SftpPooledFactory)getFactory();
-        SftpConnConfig defConfig = factory.getSftpConnConf(sftpName);
+        SftpConnConfig defConfig = factory.getSftpConnConf(sftpId);
         if (defConfig == null){
             // 如果配置数据不存在或密码有变动则抛出异常
             throw new SftpConfigException("SftpConnConfig is null");
         }
-        return super.borrowObject(sftpName);
+        return super.borrowObject(sftpId);
     }
 
     /**
      * 使池中的对象失效，当获取到的对象被确定无效时（由于异常或其他问题），应该调用该方法
-     * @param key
-     * @param sftpConnect
-     * @throws Exception
+     * 当要把一个借走的对象置为无效的时候。（可能是因为对象的调用发生了异常或者其他未知原因）
+     * @param sftpId 指定sftp的唯一id
+     * @param sftpConnect sftp链接对象
+     * @throws Exception 失效失败抛出异常
      */
     @Override
-    public void  invalidateObject(String key, SftpConnect sftpConnect) throws Exception {
-        super.invalidateObject(key,sftpConnect);
+    public void  invalidateObject(String sftpId, SftpConnect sftpConnect) throws Exception {
+        if (sftpConnect != null && sftpConnect.isConnected()){
+            sftpConnect.disconnect();
+        }
+        super.invalidateObject(sftpId,sftpConnect);
     }
+
+    public void invalidateSftp(SftpConnect sftpConnect) throws Exception {
+        if (sftpConnect != null && sftpConnect.isConnected()){
+            sftpConnect.disconnect();
+            super.invalidateObject(sftpConnect.getId(),sftpConnect);
+        }
+    }
+
     /**
      * 将使用完的sftp链接交还给连接池
      * @param sftpConnect sftp链接对象
      */
     public void returnSftp(SftpConnect sftpConnect){
-        returnObject(sftpConnect.getFtpName(), sftpConnect);
+        returnObject(sftpConnect.getId(), sftpConnect);
     }
 
     /**
-     * 获取活跃数
-     * @return
+     * 获取活跃数, 也就是被从连接池中出来的sftp链接
+     * @return 活跃状态的 sftp链接数
      */
     @Override
     public int getNumActive(){
@@ -106,17 +118,18 @@ public class SftpPool extends GenericKeyedObjectPool<String, SftpConnect> {
     }
 
     /**
-     * 获取指定 key 的活跃数
-     * @return
+     * 获取指定 Id 的活跃数
+     * @param sftpId 指定sftp的唯一id
+     * @return 活跃状态的 sftp链接数
      */
     @Override
-    public int getNumActive(final String key){
-        return super.getNumActive(key);
+    public int getNumActive(final String sftpId){
+        return super.getNumActive(sftpId);
     }
 
     /**
      * 获取空闲数
-     * @return
+     * @return 空闲状态的sftp链接数
      */
     @Override
     public int getNumIdle(){
@@ -124,13 +137,13 @@ public class SftpPool extends GenericKeyedObjectPool<String, SftpConnect> {
     }
 
     /**
-     * 获取指定 key 的空闲数
-     * @param key
-     * @return
+     * 获取指定 Id 的空闲数
+     * @param sftpId 指定sftp的唯一id
+     * @return 空闲状态的sftp链接数
      */
     @Override
-    public int getNumIdle(final String key){
-        return super.getNumIdle(key);
+    public int getNumIdle(final String sftpId){
+        return super.getNumIdle(sftpId);
     }
 
     /**
@@ -142,12 +155,12 @@ public class SftpPool extends GenericKeyedObjectPool<String, SftpConnect> {
     }
 
     /**
-     * 清除指定 key 的对象
-     * @param key
+     * 清除指定 Id 的对象
+     * @param sftpId 指定sftp的唯一id
      */
     @Override
-    public void clear(String key){
-        super.clear(key);
+    public void clear(String sftpId){
+        super.clear(sftpId);
     }
 
     /**

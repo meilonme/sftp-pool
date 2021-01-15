@@ -37,9 +37,9 @@ public class SftpClient {
     /**
      * 提供函数式方式使用 SftpConnect
      * 有返回值
-     * @param fun
-     * @param <P>
-     * @return
+     * @param fun 执行函数
+     * @param <P> 执行结果
+     * @return 执行结果
      */
     public <P> P run(Function<SftpConnect, P > fun){
         try (SftpConnect sftp = pool.borrowObject(config)){
@@ -52,7 +52,7 @@ public class SftpClient {
     /**
      * 提供函数式方式使用 SftpConnect
      * 无返回值
-     * @param fun
+     * @param fun 执行函数
      */
     public void run(Consumer<SftpConnect> fun){
         try (SftpConnect sftp = pool.borrowObject(config)){

@@ -20,26 +20,22 @@ public class SftpConnConfig {
      * 如果不填则会自动生成一个
      * 生成规则 userName + "@" + host + ":" port
      */
-    private String sftpName;
+    private String id;
 
     public SftpConnConfig(String host, int port, String userName, String password) {
-        this.host = host;
-        this.port = port;
-        this.userName = userName;
-        this.password = password;
-        this.sftpName = userName + "@" + host + ":" + port;
+        this(host,port,userName,password,null);
     }
 
-    public SftpConnConfig(String host, int port, String userName, String password, String sftpName) {
+    public SftpConnConfig(String host, int port, String userName, String password, String id) {
         this.host = host;
         this.port = port;
         this.userName = userName;
         this.password = password;
-        if (sftpName != null && !sftpName.isEmpty()){
-            this.sftpName = sftpName;
+        if (id != null && !id.isEmpty()){
+            this.id = id;
         }
         else {
-            this.sftpName = userName + "@" + host + ":" + port;
+            this.id = userName + "@" + host + ":" + port;
         }
     }
 
@@ -59,11 +55,11 @@ public class SftpConnConfig {
         return password;
     }
 
-    public String getSftpName() {
-        return sftpName;
+    public String getId() {
+        return id;
     }
 
-    public void setSftpName(String sftpName) {
-        this.sftpName = sftpName;
+    public void setId(String id) {
+        this.id = id;
     }
 }

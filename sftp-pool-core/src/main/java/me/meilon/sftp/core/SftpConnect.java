@@ -3,6 +3,7 @@ package me.meilon.sftp.core;
 
 import com.jcraft.jsch.*;
 import lombok.extern.slf4j.Slf4j;
+import me.meilon.sftp.core.conf.SftpConnConfig;
 import me.meilon.sftp.core.conf.SftpMode;
 import me.meilon.sftp.core.utils.FileUtil;
 
@@ -21,20 +22,16 @@ public class SftpConnect implements Closeable {
 
     private final ChannelSftp sftp;
 
-    private String ftpName;
+    private final SftpConnConfig config;
 
     /**
      * 用于标识此链接是否通过链接池创建
      */
     private boolean isPool = false;
 
-    protected SftpConnect(String ftpName, ChannelSftp sftp) {
-        this.ftpName = ftpName;
+    protected SftpConnect(SftpConnConfig config, ChannelSftp sftp) {
+        this.config = config;
         this.sftp = sftp;
-    }
-
-    public void setFtpName(String ftpName) {
-        this.ftpName = ftpName;
     }
 
     public boolean isPool() {
@@ -45,8 +42,8 @@ public class SftpConnect implements Closeable {
         isPool = pool;
     }
 
-    public String getFtpName(){
-        return this.ftpName;
+    public String getId(){
+        return config.getId();
     }
 
 
