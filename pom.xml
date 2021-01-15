@@ -6,10 +6,10 @@
 
     <groupId>me.meilon.sftp</groupId>
     <artifactId>sftp-pool</artifactId>
-    <version>0.0.5</version>
+    <version>0.0.6</version>
     <packaging>pom</packaging>
     <name>${project.artifactId}</name>
-    <description>sftp链接池</description>
+    <description>一款基于 apache commons-pool2 和 jsch 实现的 sftp 连接池</description>
     <url>https://github.com/meilonme/sftp-pool</url>
 
     <licenses>
@@ -18,6 +18,14 @@
             <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
         </license>
     </licenses>
+
+    <developers>
+        <developer>
+            <name>meilon</name>
+            <email>meilon.me@outlook.com</email>
+            <url>https://github.com/meilonme</url>
+        </developer>
+    </developers>
 
     <modules>
         <module>sftp-pool-core</module>
@@ -38,6 +46,7 @@
         <maven-source-plugin.version>2.2.1</maven-source-plugin.version>
         <maven-javadoc-plugin.version>3.1.1</maven-javadoc-plugin.version>
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
+        <maven-scm-plugin.version>1.8.1</maven-scm-plugin.version>
         <flatten-maven-plugin.version>1.1.0</flatten-maven-plugin.version>
         <gmavenplus-plugin.version>1.6</gmavenplus-plugin.version>
         <jacoco.version>0.8.3</jacoco.version>
@@ -64,11 +73,15 @@
     <distributionManagement>
         <repository>
             <id>ossrh</id>
+            <name>releases</name>
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <uniqueVersion>true</uniqueVersion>
         </repository>
         <snapshotRepository>
             <id>ossrh</id>
+            <name>snapshots</name>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <uniqueVersion>true</uniqueVersion>
         </snapshotRepository>
     </distributionManagement>
 
@@ -79,14 +92,6 @@
     </scm>
 
 
-    <developers>
-        <developer>
-            <name>meilon</name>
-            <email>meilon.me@outlook.com</email>
-            <url>https://github.com/meilonme</url>
-        </developer>
-    </developers>
-
     <build>
         <plugins>
             <plugin>
@@ -96,6 +101,14 @@
                     <target>${maven.compiler.target}</target>
                     <source>${maven.compiler.source}</source>
                     <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>2.3</version>
+                <configuration>
+                    <generateBackupPoms>false</generateBackupPoms>
                 </configuration>
             </plugin>
             <plugin>
@@ -135,13 +148,14 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-scm-plugin</artifactId>
-                <version>1.8.1</version>
+                <version>${maven-scm-plugin.version}</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
                 <version>3.0.0-M1</version>
                 <configuration>
+                    <goals>deploy</goals>
                     <mavenExecutorId>forked-path</mavenExecutorId>
                     <useReleaseProfile>false</useReleaseProfile>
                     <arguments>-Psonatype-oss-release</arguments>
@@ -156,7 +170,7 @@
                     <dependency>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-scm-plugin</artifactId>
-                        <version>1.8.1</version>
+                        <version>${maven-scm-plugin.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>
