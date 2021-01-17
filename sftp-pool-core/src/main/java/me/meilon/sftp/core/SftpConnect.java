@@ -51,25 +51,11 @@ public class SftpConnect implements Closeable {
         return sftp;
     }
 
-    /**
-     * 重新链接
-     */
-    public void connect() throws JSchException {
-        sftp.disconnect();
-        Session session = sftp.getSession();
-        if (!session.isConnected()){
-            session.connect();
-        }
-        if (!sftp.isConnected()){
-            sftp.connect();
-        }
-    }
 
     /**
      * 检查连接状态
      *
-     * @return true: 连接正常
-     * false: 连接断开
+     * @return true: 连接正常  false: 连接断开
      */
     public boolean isConnected() {
         return sftp.isConnected();
@@ -78,7 +64,8 @@ public class SftpConnect implements Closeable {
     /**
      * 判断目标是否是目录
      * @param directory 目录路径
-     * @return 结果
+     * @return true: 是目录, false: 不是目录
+     * @throws SftpException SftpException
      */
     public  boolean isDir(String directory) throws SftpException {
         SftpATTRS attrs = getAttrs(directory);
@@ -88,7 +75,8 @@ public class SftpConnect implements Closeable {
     /**
      * 判断远程目标是否是文件
      * @param filePath 目标文件路径
-     * @return 结果
+     * @return true: 是文件, false: 不是文件
+     * @throws SftpException SftpException
      */
     public boolean isFile(String filePath) throws SftpException {
         SftpATTRS attrs = getAttrs(filePath);
@@ -98,7 +86,8 @@ public class SftpConnect implements Closeable {
     /**
      * 判断目录或文件是否存在
      * @param path 目标路径
-     * @return 结果
+     * @return true: 存在, false: 不存在
+     * @throws SftpException SftpException
      */
     public boolean isExist(String path) throws SftpException {
         SftpATTRS attrs = getAttrs(path);
@@ -111,6 +100,7 @@ public class SftpConnect implements Closeable {
      * @param path 目标路径
      * @return 文件或目录属性
      * 注: 如果文件或目录不存在则返回 null
+     * @throws SftpException SftpException
      */
     public SftpATTRS getAttrs(String path) throws SftpException {
         try {
@@ -127,6 +117,7 @@ public class SftpConnect implements Closeable {
      * 查看当前所处目录
      *
      * @return 当前目录字串
+     * @throws SftpException SftpException
      */
     public String pwd() throws SftpException {
         return sftp.pwd();
@@ -135,7 +126,7 @@ public class SftpConnect implements Closeable {
     /**
      * 切换目录
      * @param path 路径
-     * @author RenZhengGuo 2016年8月13日 下午5:29:37
+     * @throws SftpException SftpException
      */
     public void cd(String path) throws SftpException {
         sftp.cd(path);
@@ -144,6 +135,7 @@ public class SftpConnect implements Closeable {
     /**
      * 创建目录
      * @param directory 目标路径
+     * @throws SftpException SftpException
      */
     public void mkdir(String directory) throws SftpException {
         if (!isDir(directory)) {
@@ -154,8 +146,9 @@ public class SftpConnect implements Closeable {
     /**
      * 创建多级目录
      * @param createPath 目标路径
+     * @throws SftpException SftpException
      */
-    public  void mkdirs(String createPath) throws SftpException {
+    public void mkdirs(String createPath) throws SftpException {
         if (isDir(createPath)) {
             return;
         }
@@ -183,6 +176,7 @@ public class SftpConnect implements Closeable {
      * 给目录授权
      * @param permsion 授权值
      * @param directory 目标路径
+     * @throws SftpException SftpException
      */
     public  void chmod(int permsion, String directory) throws SftpException {
         sftp.chmod(permsion, directory);
@@ -193,6 +187,7 @@ public class SftpConnect implements Closeable {
      *
      * @param oldpath 旧文件或目录
      * @param newpath 新文件或目录
+     * @throws SftpException SftpException
      */
     public void rename(String oldpath, String newpath) throws SftpException {
         sftp.rename(oldpath, newpath);
@@ -202,6 +197,7 @@ public class SftpConnect implements Closeable {
      * 功能说明:打开指定目录, 如果目录不存在则创建
      *
      * @param directory 目标路径
+     * @throws SftpException SftpException
      */
     public void openDir(String directory) throws SftpException {
         if (directory == null || directory.isEmpty()) {
@@ -218,6 +214,7 @@ public class SftpConnect implements Closeable {
      *
      * @param gid 组名
      * @param path 文件或目录的路径
+     * @throws SftpException SftpException
      */
     public void chgrp(Integer gid, String path) throws SftpException {
         sftp.chgrp(gid, path);
@@ -228,6 +225,7 @@ public class SftpConnect implements Closeable {
      * 删除当前目录下的文件
      *
      * @param deleteFile 要删除的文件
+     * @throws SftpException SftpException
      */
     public void delete(String deleteFile) throws SftpException {
         sftp.rm(deleteFile);
@@ -239,6 +237,7 @@ public class SftpConnect implements Closeable {
      *
      * @param directory  要删除文件所在目录
      * @param deleteFile 要删除的文件
+     * @throws SftpException SftpException
      */
     public void delete(String directory, String deleteFile) throws SftpException {
         String pwd = pwd();
@@ -255,6 +254,7 @@ public class SftpConnect implements Closeable {
      *                   注: remotePath 可以是目录, 也可以是文件
      *                   如果是目录则按照原文件名上传至 remotePath 目录
      *                   如果是文件则按照指定的文件名上传
+     * @throws SftpException SftpException
      */
     public void uploadFile(String filePath, String remotePath) throws SftpException {
         sftp.put(filePath, remotePath);
@@ -266,8 +266,10 @@ public class SftpConnect implements Closeable {
      * @param remotePath 远程文件路径
      * @param mode 文件传输模式
      * @see SftpMode
+     * @throws SftpException SftpException
      */
-    public void uploadFile(String filePath, String remotePath, SftpMode mode) throws SftpException {
+    public void uploadFile(String filePath, String remotePath,
+                           SftpMode mode) throws SftpException {
         sftp.put(filePath, remotePath, mode.getMode());
     }
 
@@ -277,8 +279,10 @@ public class SftpConnect implements Closeable {
      * @param filePath 本地文件路径
      * @param remotePath 远程路径
      * @param monitor 回调函数
+     * @throws SftpException SftpException
      */
-    public void uploadFile(String filePath, String remotePath, SftpProgressMonitor monitor) throws SftpException {
+    public void uploadFile(String filePath, String remotePath,
+                           SftpProgressMonitor monitor) throws SftpException {
         sftp.put(filePath, remotePath, monitor);
     }
 
@@ -286,7 +290,7 @@ public class SftpConnect implements Closeable {
      * 上传文件流到远程服务器
      * @param fileIo 文件流
      * @param remoteFilePath 远程文件路径, 必须是包含文件名的完整路径, 不能是目录
-     * @throws SftpException
+     * @throws SftpException SftpException
      */
     public void uploadFile(InputStream fileIo, String remoteFilePath) throws SftpException {
         if (isDir(remoteFilePath)){
@@ -303,6 +307,7 @@ public class SftpConnect implements Closeable {
      * 采用默认的传输模式：OVERWRITE
      * @param  remoteFilePath 远程文件地址
      * @return 文件输出流
+     * @throws SftpException SftpException
      */
     public OutputStream uploadFile(String remoteFilePath) throws SftpException {
         if (isDir(remoteFilePath)) {
@@ -315,6 +320,7 @@ public class SftpConnect implements Closeable {
      * 上传文件到指定的远程目录
      * @param localFile 本地文件
      * @param remoteFilePath 远程文件地址
+     * @throws SftpException SftpException
      */
     public void uploadFile(File localFile, String remoteFilePath) throws SftpException {
         if (!localFile.isFile()){
@@ -334,6 +340,7 @@ public class SftpConnect implements Closeable {
      * 批量上传本地目录下的文件到远程目录
      * @param directory 本地目录
      * @param remoteDir 远程目录
+     * @throws SftpException SftpException
      */
     public void uploadFiles(String directory, String remoteDir) throws SftpException {
         uploadFiles(directory,remoteDir,null);
@@ -344,6 +351,7 @@ public class SftpConnect implements Closeable {
      * @param directory 本地目录
      * @param remoteDir 远程目录
      * @param filter 过滤器, 可以为空, 为空则不做过滤
+     * @throws SftpException SftpException
      */
     public void uploadFiles(String directory, String remoteDir, FileFilter filter) throws SftpException {
         File filePath = new File(directory);
@@ -368,6 +376,7 @@ public class SftpConnect implements Closeable {
      * 下载文件
      * @param remoteFilePath 远程文件地址
      * @param localFilePath 本地文件地址
+     * @throws SftpException SftpException
      */
     public void download(String remoteFilePath, String localFilePath) throws SftpException {
         sftp.get(remoteFilePath, localFilePath);
@@ -376,14 +385,15 @@ public class SftpConnect implements Closeable {
     /**
      * 下载文件，下载过程中采用重命名防止被其他程序误处理
      *
-     * @param downloadPath  下载目录
+     * @param remotePath  远程目录
      * @param fileName      文件名
      * @param savePath      保存目录
      * @param suffixPattren 下载中文件后缀名
      * @return boolean
      */
-    public  boolean downloadAsnFile(String downloadPath, String fileName, String savePath, String suffixPattren) {
-        boolean status = true;
+    public  boolean downloadAsnFile(String remotePath, String fileName,
+                                    String savePath, String suffixPattren) {
+        boolean status;
         FileOutputStream fileOutputStream = null;
         try {
             File fileDir = new File(savePath);
@@ -393,9 +403,9 @@ public class SftpConnect implements Closeable {
             File tempFile = new File(FileUtil.unite(savePath, fileName + suffixPattren));
             fileOutputStream = new FileOutputStream(tempFile);
 
-            sftp.get(fileName, fileOutputStream);
+            sftp.get(FileUtil.unite(remotePath, fileName), fileOutputStream);
             File file = new File(FileUtil.unite(savePath, fileName));
-            tempFile.renameTo(file);
+            status = tempFile.renameTo(file);
         } catch (Exception e) {
             status = false;
             log.error("下载文件异常，原因：{}", e.getMessage());
@@ -418,6 +428,7 @@ public class SftpConnect implements Closeable {
      *
      * @param directory 要列出的目录
      * @return 文件名列表
+     * @throws SftpException SftpException
      */
     public List<String> listFileNames(String directory) throws SftpException {
 
@@ -446,6 +457,7 @@ public class SftpConnect implements Closeable {
      *
      * @param filePath 要打开的文件名
      * @return io流
+     * @throws SftpException SftpException
      */
     public InputStream openFile(String filePath) throws SftpException {
         return sftp.get(filePath);
@@ -457,6 +469,7 @@ public class SftpConnect implements Closeable {
      * @param fromPath 文件所在路径
      * @param toPath   要复制到的目标路径
      * @param fileName 文件名
+     * @throws SftpException SftpException
      */
     public void copyfile(String fromPath, String toPath, String fileName)
             throws SftpException, IOException {
@@ -472,6 +485,7 @@ public class SftpConnect implements Closeable {
      *
      * @param from 原始文件路径, 必须包含文件名
      * @param to   目标文件路径, 必须包含文件名
+     * @throws SftpException SftpException
      */
     public void copyfile(String from, String to) throws SftpException, IOException {
         try(InputStream in = sftp.get(from);
