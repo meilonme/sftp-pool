@@ -29,9 +29,9 @@ public class SftpClient {
         config = SftpClientFactory.getSftpConnConfig(host,port,user,password);
     }
 
-    public SftpClient(String host, Integer port, String user, String password, String sftpName) {
+    public SftpClient(String host, Integer port, String user, String password, String sftpId) {
         pool = SftpClientFactory.getSftpPool();
-        config = SftpClientFactory.getSftpConnConfig(host,port,user,password,sftpName);
+        config = SftpClientFactory.getSftpConnConfig(host,port,user,password,sftpId);
     }
 
     /**
