@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>me.meilon.jsftp</groupId>
-    <artifactId>sftp-pool</artifactId>
-    <version>0.1.4</version>
+    <artifactId>jsftp-pool</artifactId>
+    <version>0.1.6</version>
     <packaging>pom</packaging>
     <name>${project.artifactId}</name>
     <description>一款基于 apache commons-pool2 和 jsch 实现的 sftp 连接池</description>
@@ -28,8 +28,8 @@
     </developers>
 
     <modules>
-        <module>sftp-pool-core</module>
-        <module>sftp-pool-client</module>
+        <module>jsftp-pool-core</module>
+        <module>jsftp-pool-client</module>
         <module>jsftp-spring-boot-starter</module>
     </modules>
 

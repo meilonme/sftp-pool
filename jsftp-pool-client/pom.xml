@@ -2,37 +2,24 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <groupId>me.meilon.jsftp</groupId>
         <artifactId>jsftp-pool</artifactId>
         <version>0.1.6</version>
     </parent>
-    <artifactId>jsftp-spring-boot-starter</artifactId>
+    <artifactId>jsftp-pool-client</artifactId>
     <name>${project.artifactId}</name>
     <packaging>jar</packaging>
 
 
     <dependencies>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-configuration-processor</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
             <groupId>me.meilon.jsftp</groupId>
-            <artifactId>jsftp-pool-client</artifactId>
+            <artifactId>jsftp-pool-core</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
-
 
     <build>
         <plugins>
