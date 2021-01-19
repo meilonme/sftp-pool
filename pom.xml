@@ -6,7 +6,7 @@
 
     <groupId>me.meilon.jsftp</groupId>
     <artifactId>jsftp-pool</artifactId>
-    <version>0.1.12</version>
+    <version>0.1.13</version>
     <packaging>pom</packaging>
     <name>${project.artifactId}</name>
     <description>一款基于 apache commons-pool2 和 jsch 实现的 sftp 连接池</description>

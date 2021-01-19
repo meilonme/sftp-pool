@@ -14,7 +14,7 @@ spring-boot 项目引入
 ```
 引入 jsftp-spring-boot-starter 后, 启动项目会自动加载配置;
 
-applacation.yml 配置样例
+application.yml 配置样例
 ```yaml
 sftp-pool:
   # 获取资源的等待时间。blockWhenExhausted 为 true 时有效。-1 代表无时间限制，一直阻塞直到有可用的资源

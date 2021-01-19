@@ -302,7 +302,6 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
     public boolean validateObject(String sftpId, PooledObject<SftpConnect> p) {
         boolean res = false;
         if (p != null){
-            log.info("{}",p.getState());
             SftpConnConfig config = connConfigMap.get(sftpId);
             // 如果设置了自动关闭链接, 则在交还时直接返回无效, 由连接池自动关闭sftp链接
             if (config.isAutoDisconnect() && PooledObjectState.RETURNING == p.getState()){
@@ -312,9 +311,9 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
             if (bean != null){
                 res = bean.isConnected();
             }
+            log.debug("validateSftp {} {}={}, NumActive {}, NumIdle {}", p.getState(), sftpId, res,
+                    pool.getNumActive(sftpId), pool.getNumIdle(sftpId));
         }
-        log.debug("validateSftp {}={}, NumActive {}, NumIdle {}", sftpId, res,
-                pool.getNumActive(sftpId), pool.getNumIdle(sftpId));
         return res;
     }
 

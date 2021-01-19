@@ -123,6 +123,12 @@ public class SftpConnect implements Closeable {
         return sftp.pwd();
     }
 
+    /**
+     * 获取默认目录
+     *
+     * @return 默认目录字串
+     * @throws SftpException SftpException
+     */
     public String getHome() throws SftpException {
         return sftp.getHome();
     }
@@ -158,7 +164,7 @@ public class SftpConnect implements Closeable {
         }
         // mkdir 命令不能创建多级目录, 所以要先根据文件分隔符分割成单个目录组
         String[] pathArry = createPath.trim().split(FileUtil.DEF_LINE_SEPARATOR);
-        StringBuilder filePath = null;
+        StringBuilder filePath;
         // 如果是绝对路径会以"/"开头, 此时分割出的数组首位是空串应替换成"/"
         if (pathArry[0].isEmpty()) {
             filePath = new StringBuilder(FileUtil.DEF_LINE_SEPARATOR);
@@ -330,7 +336,7 @@ public class SftpConnect implements Closeable {
         if (!localFile.isFile()){
             throw new IllegalAccessError("localFile is not found");
         }
-        FileInputStream in = null;
+        FileInputStream in;
         try {
             in = new FileInputStream(localFile);
             sftp.put(in,remoteFilePath);
@@ -362,7 +368,7 @@ public class SftpConnect implements Closeable {
         if (!filePath.isDirectory() || !filePath.exists()){
             return;
         }
-        File[] files = null;
+        File[] files;
         if (filter == null){
             files = filePath.listFiles();
         }
