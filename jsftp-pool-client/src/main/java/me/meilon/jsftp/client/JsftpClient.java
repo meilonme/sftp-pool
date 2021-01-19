@@ -1,13 +1,12 @@
 package me.meilon.jsftp.client;
 
 import me.meilon.jsftp.client.excetpion.SftpClientRunException;
+import me.meilon.jsftp.client.function.JsftpConsumer;
+import me.meilon.jsftp.client.function.JsftpFunction;
 import me.meilon.jsftp.core.SftpConnect;
 import me.meilon.jsftp.core.SftpPool;
 import me.meilon.jsftp.core.conf.SftpConnConfig;
 
-
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * sftp 客户端
@@ -16,8 +15,9 @@ import java.util.function.Function;
  */
 public class JsftpClient {
 
-    private final SftpPool pool;
-    private final SftpConnConfig config;
+    protected final SftpPool pool;
+    protected final SftpConnConfig config;
+
 
     public JsftpClient(SftpPool pool, SftpConnConfig config) {
         this.pool = pool;
@@ -27,13 +27,13 @@ public class JsftpClient {
     /**
      * 提供函数式方式使用 SftpConnect
      * 有返回值
-     * @param fun 执行函数
+     * @param function 执行函数
      * @param <P> 执行结果
      * @return 执行结果
      */
-    public <P> P run(Function<SftpConnect, P > fun){
+    public <P> P run(JsftpFunction<P> function){
         try (SftpConnect sftp = pool.borrowObject(config)){
-            return fun.apply(sftp);
+            return function.apply(sftp);
         } catch (Exception e) {
             throw new SftpClientRunException(e);
         }
@@ -44,7 +44,7 @@ public class JsftpClient {
      * 无返回值
      * @param fun 执行函数
      */
-    public void run(Consumer<SftpConnect> fun){
+    public void run(JsftpConsumer fun){
         try (SftpConnect sftp = pool.borrowObject(config)){
             fun.accept(sftp);
         } catch (Exception e) {

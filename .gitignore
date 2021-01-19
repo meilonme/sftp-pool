@@ -31,3 +31,5 @@ build/
 .vscode/
 /sftp-pool-core/src/test/
 /sftp-pool-core/src/main/resources/log4j.properties
+/jsftp-spring-boot-starter/src/test/java/me/meilon/jsftp/autoconfigure/SftpCoreTest.java
+/jsftp-pool-core/src/main/resources/log4j.properties

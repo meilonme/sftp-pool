@@ -1,0 +1,4 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+me.meilon.jsftp.autoconfigure.JsftpPoolConfiguration
+org.springframework.context.ApplicationContextInitializer=\
+me.meilon.jsftp.autoconfigure.context.JsftpClientApplicationContextInitializer

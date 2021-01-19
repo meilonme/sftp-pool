@@ -1,5 +1,6 @@
-package me.meilon.jsftp.autoconfigure;
+package me.meilon.jsftp.autoconfigure.context;
 
+import me.meilon.jsftp.autoconfigure.JsftpClientRegistryFactory;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 

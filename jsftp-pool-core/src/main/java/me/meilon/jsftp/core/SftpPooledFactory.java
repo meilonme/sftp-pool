@@ -135,6 +135,7 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
             synchronized (SftpPool.class){
                 if (pool == null){
                     if (this.sftpPoolConfig == null){
+                        log.info("use def SftpPoolConfig");
                         this.sftpPoolConfig = new SftpPoolConfig();
                     }
                     pool = new SftpPool(this, this.sftpPoolConfig.toGenericKeyedObjectPoolConfig());
@@ -289,9 +290,10 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
      * 验证 sftp 链接是否有效
      * Pool中不能保存无效的"对象",因此"后台检测线程"会周期性的检测 Pool中"对象"的有效性,
      * 如果对象无效则会导致此对象从 Pool中移除,并 destroy;
-     * 此外在调用者从Pool获取一个"对象"时,也会检测"对象"的有效性,确保不能将"无效"的对象输出给调用者;
-     * 当调用者使用完毕将"对象"归还到 Pool时,仍然会检测对象的有效性.所谓有效性,就是此"对象"的状态是否符合预期,是否可以对调用者直接使用;
-     * 如果对象是Socket,那么它的有效性就是socket的通道是否畅通/阻塞是否超时等.
+     * 此外用户从连接池获取一个链接时,也会检测有效性,确保不能将"无效"的链接输出给调用者;
+     * 当用户使用完毕将链接归还到 Pool时,仍然会检测对象的有效性.
+     * 所谓有效性,就是此"对象"的状态是否符合预期,是否可以对调用者直接使用;
+     *
      * @param sftpId 指定sftp的唯一id
      * @param p 池化对象
      * @return true 链接有效, false 链接无效
@@ -300,8 +302,9 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
     public boolean validateObject(String sftpId, PooledObject<SftpConnect> p) {
         boolean res = false;
         if (p != null){
+            log.info("{}",p.getState());
             SftpConnConfig config = connConfigMap.get(sftpId);
-            // 如果开启了自动关闭, 则在交还时直接返回无效, 由连接池自动关闭sftp链接
+            // 如果设置了自动关闭链接, 则在交还时直接返回无效, 由连接池自动关闭sftp链接
             if (config.isAutoDisconnect() && PooledObjectState.RETURNING == p.getState()){
                 return false;
             }
@@ -310,16 +313,16 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
                 res = bean.isConnected();
             }
         }
-        log.debug("validateObject {} = {}", sftpId, res);
+        log.debug("validateSftp {}={}, NumActive {}, NumIdle {}", sftpId, res,
+                pool.getNumActive(sftpId), pool.getNumIdle(sftpId));
         return res;
     }
 
     /**
      * 销毁 sftp 链接
-     * 如果对象池中检测到某个"对象"idle的时间超时,或者操作者向对象池"归还对象"时检测到"对象"已经无效,那么此时将会导致"对象销毁";
-     * 当调用此方法时,"对象"的生命周期必须结束.如果object是线程,那么此时线程必须退出;
-     * 如果object是socket操作,那么此时socket必须关闭;
-     * 如果object是文件流操作,那么此时"数据flush"且正常关闭.
+     * 如果对象池中检测到某个"对象"idle的时间超时,
+     * 或者操作者向对象池"归还对象"时检测到"对象"已经无效,那么此时将会导致"对象销毁";
+     * 此方法会关闭 sftp 的链接
      *
      * @param sftpId 指定sftp的唯一id
      * @param p 池化对象
@@ -333,19 +336,16 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
             if (sftp != null){
                 sftp.disconnect();
             }
-            p.markAbandoned();
-            super.destroyObject(sftpId, p);
-            log.debug("destroyObject {}, NumActive {}, NumIdle {}",
+            log.debug("destroySftp {}, NumActive {}, NumIdle {}",
                     sftpId, pool.getNumActive(sftpId), pool.getNumIdle(sftpId));
+            super.destroyObject(sftpId, p);
         }
     }
 
     /**
      * 激活
-     * 当Pool中决定移除一个对象交付给调用者时额外的"激活"操作,
-     * 比如可以在 activateObject方法中"重置"参数列表让调用者使用时感觉像一个"新创建"的对象一样;
-     * 如果object是一个线程,可以在"激活"操作中重置"线程中断标记",或者让线程从阻塞中唤醒等;
-     * 如果object是一个socket,那么可以在"激活操作"中刷新通道,或者对socket进行链接重建(假如socket意外关闭)等.
+     * 当用户从链接池中取出一个 sftp 链接时会调用此方法
+     *
      * @param sftpId 指定sftp的唯一id
      * @param p 池化对象
      * @throws Exception 激活失败时抛出异常
@@ -353,28 +353,27 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
     @Override
     public void activateObject(String sftpId, PooledObject<SftpConnect> p)
             throws Exception {
-        SftpConnect conn = p.getObject();
-        SftpConnConfig config = connConfigMap.get(sftpId);
-        String homePath = config.getBasePath();
-        if (homePath != null){
-            conn.cd(homePath);
-        }
         super.activateObject(sftpId, p);
     }
 
     /**
-     * "钝化"对象,当调用者"归还对象"时,Pool将会"钝化对象"；
-     * 钝化的言外之意,就是此"对象"暂且需要"休息"一下.
-     * 如果object是一个socket,那么可以passivateObject中清除buffer,将socket阻塞;
-     * 如果object是一个线程,可以在"钝化"操作中将线程sleep或者将线程中的某个对象wait.
-     * 需要注意,activateObject和 passivateObject两个方法需要对应,避免死锁或者"对象"状态的混乱.
-     * @param sftpId 指定sftp的唯一id
+     * "钝化"对象
+     * 当用户"归还对象"时, 链接池会调用此方法
+     * 此方法将会把 sftp 链接的当前目录重置为 basePath
+     * basePath 可以自定义设置, 如果不设置则默认为 homePath
+     * @see SftpConnConfig#getBasePath()
      * @param p 池化对象
      * @throws Exception 钝化失败时抛出异常
      */
     @Override
     public void passivateObject(String sftpId, PooledObject<SftpConnect> p)
             throws Exception {
+        SftpConnect conn = p.getObject();
+        SftpConnConfig config = connConfigMap.get(sftpId);
+        String homePath = config.getBasePath();
+        if (homePath != null){
+            conn.cd(homePath);
+        }
         super.passivateObject(sftpId, p);
     }
 
