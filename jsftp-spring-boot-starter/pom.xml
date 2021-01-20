@@ -5,7 +5,7 @@
     <parent>
         <groupId>me.meilon.jsftp</groupId>
         <artifactId>jsftp-pool</artifactId>
-        <version>0.1.13</version>
+        <version>0.1.14</version>
     </parent>
     <artifactId>jsftp-spring-boot-starter</artifactId>
     <name>${project.artifactId}</name>
@@ -16,7 +16,7 @@
         <dependency>
             <groupId>me.meilon.jsftp</groupId>
             <artifactId>jsftp-pool-client</artifactId>
-            <version>0.1.13</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
