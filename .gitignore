@@ -33,3 +33,4 @@ build/
 /sftp-pool-core/src/main/resources/log4j.properties
 /jsftp-spring-boot-starter/src/test/java/me/meilon/jsftp/autoconfigure/SftpCoreTest.java
 /jsftp-pool-core/src/main/resources/log4j.properties
+/mvn_version.bat

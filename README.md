@@ -4,12 +4,13 @@ https://github.com/meilonme/sftp-pool
 
 一款基于apache commons-pool2  sftp 连接池
 
+### jsftp-spring-boot-starter
 spring-boot 项目引入
 ```xml
 <dependency>
     <groupId>me.meilon.jsftp</groupId>
     <artifactId>jsftp-spring-boot-starter</artifactId>
-    <version>0.1.10</version>
+    <version>0.1.15</version>
 </dependency>
 ```
 引入 jsftp-spring-boot-starter 后, 启动项目会自动加载配置;
@@ -25,9 +26,6 @@ sftp-pool:
   maxIdlePerKey: 8
   # 每个key最大可存在的链接数, 默认 8
   maxTotalPerKey: 8
-  # 链接池中最大连接数，默认值 8
-  # 建议根据实际使用情况进行扩充
-  maxTotal: 8
   # 对象空闲的最小时间，达到此值后空闲对象将可能会被移除。
   #不受最小连接数限制影响
   # -1 表示不移除；默认 30 分钟
@@ -67,6 +65,7 @@ jsftpClient 使用样例;
 
 有返回值的调用
 ```java
+JsftpClientFactory jsftpClientFactory = new JsftpClientFactory();
 JsftpClient client = jsftpClientFactory.createSftpClient(host,port,username,password);
 List<String> fileNames = client.run(sftp ->{
     String homeBath = sftp.getHome();
@@ -76,6 +75,7 @@ List<String> fileNames = client.run(sftp ->{
 
 无返回值的调用
 ```java
+JsftpClientFactory jsftpClientFactory = new JsftpClientFactory();
 JsftpClient client = jsftpClientFactory.createSftpClient(host,port,username,password);
 client.run(sftp ->{
     String homeBath = sftp.getHome();
@@ -91,11 +91,11 @@ client.run(sftp ->{
 <dependency>
   <groupId>me.meilon.sftp</groupId>
   <artifactId>sftp-pool-core</artifactId>
-    <version>0.1.10</version>
+    <version>0.1.15</version>
 </dependency>
 ```
 
-### 使用帮助
+
 通过连接池创建一个sftp链接
 ```java
     String sftpId = "sftp1";
