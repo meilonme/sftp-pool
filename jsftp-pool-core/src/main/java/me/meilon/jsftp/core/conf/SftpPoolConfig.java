@@ -123,8 +123,10 @@ public class SftpPoolConfig {
 
     /**
      * 链接池中总体可存放的最大连接数，
-     * 可能超过，不过超过后使用完了就会销毁
-     * 默认值 8
+     * 实际使用中, 只要连接数不超过 maxTotalPerKey 依然可以正常创建新链接，
+     * 但是超出后创建的链接使用完就会销毁
+     * 设置为负值表示不限制
+     * 默认值 -1
      */
     private int maxTotal = GenericKeyedObjectPoolConfig.DEFAULT_MAX_TOTAL;
 

@@ -18,7 +18,6 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "sftp-pool")
 public class JsftpPoolProperties extends SftpPoolConfig {
 
-
     /**
      * sftp 链接配置
      */
@@ -33,19 +32,25 @@ public class JsftpPoolProperties extends SftpPoolConfig {
     }
 
     public Map<String, SftpConnConfig> getSftpConnConfigMap(){
-        Map<String, SftpConnConfig> configMap = new HashMap<>(connConfigs.size());
-        for (Map.Entry<String, JsftpConnProperties> entry : connConfigs.entrySet()) {
-            JsftpConnProperties properties = entry.getValue();
-            if (properties.getId() != null){
-                properties.setId(entry.getKey());
+        Map<String, SftpConnConfig> configMap;
+        if (connConfigs == null){
+            configMap = new HashMap<>(16);
+        }
+        else{
+            configMap = new HashMap<>(connConfigs.size());
+            for (Map.Entry<String, JsftpConnProperties> entry : connConfigs.entrySet()) {
+                JsftpConnProperties properties = entry.getValue();
+                if (properties.getId() != null){
+                    properties.setId(entry.getKey());
+                }
+                SftpConnConfig conf = new SftpConnConfig(properties.getHost(),
+                        properties.getPort(),
+                        properties.getUserName(),
+                        properties.getPassword(),
+                        properties.getId());
+                conf.setAutoDisconnect(properties.getAutoDisconnect());
+                configMap.put(entry.getKey(),conf);
             }
-            SftpConnConfig conf = new SftpConnConfig(properties.getHost(),
-                    properties.getPort(),
-                    properties.getUserName(),
-                    properties.getPassword(),
-                    properties.getId());
-            conf.setAutoDisconnect(properties.getAutoDisconnect());
-            configMap.put(entry.getKey(),conf);
         }
         return configMap;
     }
