@@ -2,9 +2,12 @@ package me.meilon.jsftp.core.conf;
 
 
 
+import lombok.Getter;
 import lombok.Setter;
-import lombok.experimental.Accessors;
 import me.meilon.jsftp.core.SftpConnect;
+import me.meilon.jsftp.core.SftpEvictionPolicy;
+import org.apache.commons.pool2.PooledObject;
+import org.apache.commons.pool2.impl.BaseObjectPoolConfig;
 import org.apache.commons.pool2.impl.EvictionPolicy;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
 
@@ -13,158 +16,230 @@ import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
  * @author meilon
  * 链接池的基础配置
  */
-public class SftpPoolConfig extends GenericKeyedObjectPoolConfig<SftpConnect> {
+@Getter
+@Setter
+public class SftpPoolConfig {
+
+    /**
+     * 连接池放池对象的方式，
+     * true：放在空闲队列最前面，
+     * false：放在空闲队列最后面，
+     * 默认为 true
+     */
+    private boolean lifo = BaseObjectPoolConfig.DEFAULT_LIFO;
+
+    /**
+     * 从池中获取/返还对象时是否使用公平锁机制，
+     * 默认 false
+     */
+    private boolean fairness = BaseObjectPoolConfig.DEFAULT_FAIRNESS;
+
+    /**
+     * 获取资源的等待时间。
+     * {@link #setBlockWhenExhausted } 为 true 时有效。
+     * -1 代表无时间限制，一直阻塞直到有可用的资源
+     * 默认 -1
+     */
+    private long maxWaitMillis = BaseObjectPoolConfig.DEFAULT_MAX_WAIT_MILLIS;
+
+
+    /**
+     * 链接关闭的超时时间, 毫秒值
+     * 默认 10_000 毫秒
+     */
+    private long evictorShutdownTimeoutMillis = BaseObjectPoolConfig.DEFAULT_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS;
+
+    /**
+     * 对象空闲的最小时间，达到此值后空闲对象将可能会被移除。
+     * 不受最小连接数限制影响
+     * 有效性验证通过 {@link me.meilon.jsftp.core.SftpPooledFactory#validateObject(String, PooledObject)} 方法执行
+     * -1 表示不移除.
+     * 默认 30 分钟
+     */
+    private long minEvictableIdleTimeMillis = BaseObjectPoolConfig.DEFAULT_MIN_EVICTABLE_IDLE_TIME_MILLIS;
+
+    /**
+     * 连接空闲的最小时间，达到此值后空闲链接将会被移除，
+     * 但会保留最小空闲连接数
+     * 有效性验证通过 {@link me.meilon.jsftp.core.SftpPooledFactory#validateObject(String, PooledObject)} 方法执行
+     * 默认为-1.
+     */
+    private long softMinEvictableIdleTimeMillis = BaseObjectPoolConfig.DEFAULT_SOFT_MIN_EVICTABLE_IDLE_TIME_MILLIS;
+
+    /**
+     * “空闲链接”检测线程每次检测链接有效性时抽查的资源数;
+     * 有效性验证通过 {@link me.meilon.jsftp.core.SftpPooledFactory#validateObject(String, PooledObject)} 方法执行
+     * 默认 3.
+     */
+    private int numTestsPerEvictionRun = BaseObjectPoolConfig.DEFAULT_NUM_TESTS_PER_EVICTION_RUN;
+
+    /**
+     * 资源回收策略，
+     * 可通过实现 {@link EvictionPolicy} 接口实现自定义回收策略
+     * 默认值 {@link SftpEvictionPolicy}
+     */
+    private String evictionPolicyClassName = SftpEvictionPolicy.class.getName();
+
+    /**
+     * 创建对象时是否验证资源有效性
+     * 有效性验证通过 {@link me.meilon.jsftp.core.SftpPooledFactory#validateObject(String, PooledObject)} 方法执行
+     * 默认 false
+     */
+    private boolean testOnCreate = BaseObjectPoolConfig.DEFAULT_TEST_ON_CREATE;
+
+    /**
+     * 设为正整数, 表示对池中空闲链接进行有效性校验的周期，毫秒数。
+     * 如果为负值，表示不运行“检测线程”。
+     * 有效性验证是通过 {@link me.meilon.jsftp.core.SftpPooledFactory#validateObject(String, PooledObject)} 方法执行的
+     * 默认值 -1L
+     */
+    private long timeBetweenEvictionRunsMillis = BaseObjectPoolConfig.DEFAULT_TIME_BETWEEN_EVICTION_RUNS_MILLIS;
+
+    /**
+     * 资源耗尽时，是否阻塞等待获取资源，
+     * 默认 true
+     */
+    private boolean blockWhenExhausted = BaseObjectPoolConfig.DEFAULT_BLOCK_WHEN_EXHAUSTED;
+
+    /**
+     * 每个key最小保持的空闲链接数.
+     * 默认 1
+     * @see #setSoftMinEvictableIdleTimeMillis(long)
+     * @see #setMinEvictableIdleTimeMillis(long)
+     */
+    private int minIdlePerKey = 1;
+
+    /**
+     * 每个key最大保持的空闲链接数;
+     * 默认 8
+     */
+    private int maxIdlePerKey = GenericKeyedObjectPoolConfig.DEFAULT_MAX_IDLE_PER_KEY;
+
+    /**
+     * 每个key最大可存在的链接数;
+     * 默认 8
+     */
+    private int maxTotalPerKey = GenericKeyedObjectPoolConfig.DEFAULT_MAX_TOTAL_PER_KEY;
+
+    /**
+     * 链接池中总体可存放的最大连接数，
+     * 可能超过，不过超过后使用完了就会销毁
+     * 默认值 8
+     */
+    private int maxTotal = GenericKeyedObjectPoolConfig.DEFAULT_MAX_TOTAL;
+
+
 
     public static Builder builder(){
         return new Builder();
     }
 
     public GenericKeyedObjectPoolConfig<SftpConnect> toGenericKeyedObjectPoolConfig(){
-        // 强制设置获取和归还对象时进行可用性校验
-        setTestOnBorrow(true);
-        setTestOnReturn(true);
-        setBlockWhenExhausted(true);
-        return this;
+        GenericKeyedObjectPoolConfig<SftpConnect> config = new GenericKeyedObjectPoolConfig<>();
+        config.setMaxTotal(maxTotal);
+        config.setMaxIdlePerKey(maxIdlePerKey);
+        config.setMinIdlePerKey(minIdlePerKey);
+        config.setMaxTotalPerKey(maxTotalPerKey);
+        config.setLifo(lifo);
+        config.setFairness(fairness);
+        config.setMaxWaitMillis(maxWaitMillis);
+        config.setMinEvictableIdleTimeMillis(minEvictableIdleTimeMillis);
+        config.setEvictorShutdownTimeoutMillis(evictorShutdownTimeoutMillis);
+        config.setSoftMinEvictableIdleTimeMillis(softMinEvictableIdleTimeMillis);
+        config.setNumTestsPerEvictionRun(numTestsPerEvictionRun);
+        config.setEvictionPolicyClassName(evictionPolicyClassName);
+        config.setTestOnCreate(testOnCreate);
+        config.setBlockWhenExhausted(blockWhenExhausted);
+        config.setTimeBetweenEvictionRunsMillis(timeBetweenEvictionRunsMillis);
+        config.setTestWhileIdle(timeBetweenEvictionRunsMillis > 0);
+        // 默认设置获取和归还对象时进行可用性校验
+        config.setTestOnBorrow(true);
+        config.setTestOnReturn(true);
+        return config;
     }
 
-    @Setter
-    @Accessors(fluent=true,chain=true)
+
     public static class Builder{
 
-        /**
-         * 连接池放池对象的方式，true：放在空闲队列最前面，false：放在空闲队列最后面，默认为 true
-         */
-        private boolean lifo = DEFAULT_LIFO;
+        private final SftpPoolConfig config = new SftpPoolConfig();
 
-        /**
-         * 从池中获取/返还对象时是否使用公平锁机制，默认为 false
-         */
-        private boolean fairness = DEFAULT_FAIRNESS;
+        public Builder setLifo(boolean lifo) {
+            config.setLifo(lifo);
+            return this;
+        }
 
-        /**
-         * 获取资源的等待时间。blockWhenExhausted 为 true 时有效。-1 代表无时间限制，一直阻塞直到有可用的资源
-         */
-        private long maxWaitMillis = DEFAULT_MAX_WAIT_MILLIS;
+        public Builder setFairness(boolean fairness) {
+            config.setFairness(fairness);
+            return this;
+        }
+
+        public Builder setMaxWaitMillis(long maxWaitMillis) {
+            config.setMaxWaitMillis(maxWaitMillis);
+            return this;
+        }
+
+        public Builder setEvictorShutdownTimeoutMillis(long evictorShutdownTimeoutMillis) {
+            config.setEvictorShutdownTimeoutMillis(evictorShutdownTimeoutMillis);
+            return this;
+        }
+
+        public Builder setMinEvictableIdleTimeMillis(long minEvictableIdleTimeMillis) {
+            config.setMinEvictableIdleTimeMillis(minEvictableIdleTimeMillis);
+            return this;
+        }
+
+        public Builder setSoftMinEvictableIdleTimeMillis(long softMinEvictableIdleTimeMillis) {
+            config.setSoftMinEvictableIdleTimeMillis(softMinEvictableIdleTimeMillis);
+            return this;
+        }
+
+        public Builder setNumTestsPerEvictionRun(int numTestsPerEvictionRun) {
+            config.setNumTestsPerEvictionRun(numTestsPerEvictionRun);
+            return this;
+        }
+
+        public Builder setEvictionPolicyClassName(String evictionPolicyClassName) {
+            config.setEvictionPolicyClassName(evictionPolicyClassName);
+            return this;
+        }
+
+        public Builder setTestOnCreate(boolean testOnCreate) {
+            config.setTestOnCreate(testOnCreate);
+            return this;
+        }
 
 
-        private long evictorShutdownTimeoutMillis = DEFAULT_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS;
+        public Builder setTimeBetweenEvictionRunsMillis(long timeBetweenEvictionRunsMillis) {
+            config.setTimeBetweenEvictionRunsMillis(timeBetweenEvictionRunsMillis);
+            return this;
+        }
 
-        /**
-         * 对象空闲的最小时间，达到此值后空闲对象将可能会被移除。
-         * 不受最小连接数限制影响
-         * -1 表示不移除；默认 30 分钟
-         */
-        private long minEvictableIdleTimeMillis = DEFAULT_MIN_EVICTABLE_IDLE_TIME_MILLIS;
+        public Builder setBlockWhenExhausted(boolean blockWhenExhausted) {
+            config.setBlockWhenExhausted(blockWhenExhausted);
+            return this;
+        }
 
-        /**
-         * 连接空闲的最小时间，达到此值后空闲链接将会被移除，
-         * 但会保留最小空闲连接数
-         * 默认为-1.
-         */
-        private long softMinEvictableIdleTimeMillis = DEFAULT_SOFT_MIN_EVICTABLE_IDLE_TIME_MILLIS;
+        public Builder setMinIdlePerKey(int minIdlePerKey) {
+            config.setMinIdlePerKey(minIdlePerKey);
+            return this;
+        }
 
-        /**
-         * “空闲链接”检测线程每次检测的资源数, 默认为 3.
-         */
-        private int numTestsPerEvictionRun = DEFAULT_NUM_TESTS_PER_EVICTION_RUN;
+        public Builder setMaxIdlePerKey(int maxIdlePerKey) {
+            config.setMaxIdlePerKey(maxIdlePerKey);
+            return this;
+        }
 
-        private EvictionPolicy<SftpConnect> evictionPolicy = null; // Only 2.6.0 applications set this
+        public Builder setMaxTotalPerKey(int maxTotalPerKey) {
+            config.setMaxTotalPerKey(maxTotalPerKey);
+            return this;
+        }
 
-        /**
-         * 资源回收策略，默认值 {@link org.apache.commons.pool2.impl.DefaultEvictionPolicy}
-         */
-        private String evictionPolicyClassName = DEFAULT_EVICTION_POLICY_CLASS_NAME;
-
-        /**
-         * 创建对象时是否调用 factory.validateObject 方法验证资源有效性，
-         * 默认 false
-         */
-        private boolean testOnCreate = DEFAULT_TEST_ON_CREATE;
-
-        /**
-         * 取出对象时是否调用 factory.validateObject 方法验证资源有效性，
-         * 默认 false
-         */
-        private boolean testOnBorrow = DEFAULT_TEST_ON_BORROW;
-
-        /**
-         * 返还对象时是否调用 factory.validateObject 方法验证资源有效性，
-         * 默认 false
-         */
-        private boolean testOnReturn = DEFAULT_TEST_ON_RETURN;
-
-        /**
-         * 池中的闲置对象是否由逐出器验证。无法验证的对象将从池中删除销毁。
-         * 默认 false
-         */
-        private boolean testWhileIdle = DEFAULT_TEST_WHILE_IDLE;
-
-        /**
-         * “空闲链接”检测线程，检测的周期，毫秒数。如果为负值，表示不运行“检测线程”。
-         * 默认值 -1L
-         */
-        private long timeBetweenEvictionRunsMillis = DEFAULT_TIME_BETWEEN_EVICTION_RUNS_MILLIS;
-
-        /**
-         * 资源耗尽时，是否阻塞等待获取资源，默认 true
-         */
-        private boolean blockWhenExhausted = DEFAULT_BLOCK_WHEN_EXHAUSTED;
-
-        private boolean jmxEnabled = DEFAULT_JMX_ENABLE;
-
-        // TODO Consider changing this to a single property for 3.x
-        private String jmxNamePrefix = DEFAULT_JMX_NAME_PREFIX;
-
-        private String jmxNameBase = DEFAULT_JMX_NAME_BASE;
-
-        /**
-         * 每个key最小保持的空闲链接数, 默认 1
-         */
-        private int minIdlePerKey = 1;
-
-        /**
-         * 每个key最大保持的空闲链接数, 默认 8
-         */
-        private int maxIdlePerKey = DEFAULT_MAX_IDLE_PER_KEY;
-
-        /**
-         * 每个key最大可存在的链接数, 默认 8
-         */
-        private int maxTotalPerKey = DEFAULT_MAX_TOTAL_PER_KEY;
-
-        /**
-         * 链接池中最大连接数，默认值 8
-         */
-        private int maxTotal = DEFAULT_MAX_TOTAL;
-
+        public Builder setMaxTotal(int maxTotal) {
+            config.setMaxTotal(maxTotal);
+            return this;
+        }
 
         public SftpPoolConfig build(){
-            SftpPoolConfig config = new SftpPoolConfig();
-            config.setMaxTotal(maxTotal);
-            config.setMaxIdlePerKey(maxIdlePerKey);
-            config.setMinIdlePerKey(minIdlePerKey);
-            config.setMaxTotalPerKey(maxTotalPerKey);
-            config.setLifo(lifo);
-            config.setFairness(fairness);
-            config.setMaxWaitMillis(maxWaitMillis);
-            config.setMinEvictableIdleTimeMillis(minEvictableIdleTimeMillis);
-            config.setEvictorShutdownTimeoutMillis(evictorShutdownTimeoutMillis);
-            config.setSoftMinEvictableIdleTimeMillis(softMinEvictableIdleTimeMillis);
-            config.setNumTestsPerEvictionRun(numTestsPerEvictionRun);
-            config.setEvictionPolicy(evictionPolicy);
-            config.setEvictionPolicyClassName(evictionPolicyClassName);
-            config.setTestOnCreate(testOnCreate);
-            config.setTestOnBorrow(testOnBorrow);
-            config.setTestOnReturn(testOnReturn);
-            config.setBlockWhenExhausted(blockWhenExhausted);
-            config.setTimeBetweenEvictionRunsMillis(timeBetweenEvictionRunsMillis);
-            if (timeBetweenEvictionRunsMillis > 0){
-                this.testWhileIdle = true;
-            }
-            config.setTestWhileIdle(testWhileIdle);
-            config.setJmxEnabled(jmxEnabled);
-            config.setJmxNamePrefix(jmxNamePrefix);
-            config.setJmxNameBase(jmxNameBase);
             return config;
         }
 

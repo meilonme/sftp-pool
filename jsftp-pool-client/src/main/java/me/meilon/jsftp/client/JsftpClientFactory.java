@@ -7,12 +7,23 @@ import me.meilon.jsftp.core.conf.SftpPoolConfig;
 import java.util.Map;
 
 /**
+ * JsftpClient 工厂类
+ * 用于构造 JsftpClient
  * @author meilon
  */
 public class JsftpClientFactory extends SftpPooledFactory{
 
 
-    private JsftpClientFactory() {
+    public JsftpClientFactory() {
+        super();
+    }
+
+    public JsftpClientFactory(Map<String, SftpConnConfig> connConfigMap) {
+        super(connConfigMap);
+    }
+
+    public JsftpClientFactory(SftpPoolConfig sftpPoolConfig) {
+        super(sftpPoolConfig);
     }
 
     public JsftpClientFactory(Map<String, SftpConnConfig> connConfigMap, SftpPoolConfig sftpPoolConfig) {

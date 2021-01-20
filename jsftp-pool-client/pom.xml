@@ -17,7 +17,7 @@
         <dependency>
             <groupId>me.meilon.jsftp</groupId>
             <artifactId>jsftp-pool-core</artifactId>
-            <version>${project.version}</version>
+            <version>0.1.13</version>
         </dependency>
     </dependencies>
 
