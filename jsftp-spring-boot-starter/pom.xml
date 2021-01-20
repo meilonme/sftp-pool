@@ -5,11 +5,27 @@
     <parent>
         <groupId>me.meilon.jsftp</groupId>
         <artifactId>jsftp-pool</artifactId>
-        <version>0.1.14</version>
+        <version>0.1.15</version>
     </parent>
     <artifactId>jsftp-spring-boot-starter</artifactId>
     <name>${project.artifactId}</name>
     <packaging>jar</packaging>
+
+    <properties>
+        <spring-boot.version>2.3.7.RELEASE</spring-boot.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
 
     <dependencies>
@@ -38,7 +54,6 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.12</version>
             <scope>compile</scope>
             <optional>true</optional>
         </dependency>

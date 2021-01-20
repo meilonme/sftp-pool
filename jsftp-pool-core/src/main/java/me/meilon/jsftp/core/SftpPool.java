@@ -16,7 +16,7 @@ import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
 public class SftpPool extends GenericKeyedObjectPool<String, SftpConnect> {
 
 
-    protected SftpPool(SftpPooledFactory factory, GenericKeyedObjectPoolConfig<SftpConnect> config) {
+    protected SftpPool(SftpPooledFactory factory, GenericKeyedObjectPoolConfig config) {
         super(factory,config);
     }
 

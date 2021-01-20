@@ -6,7 +6,7 @@
 
     <groupId>me.meilon.jsftp</groupId>
     <artifactId>jsftp-pool</artifactId>
-    <version>0.1.14</version>
+    <version>0.1.15</version>
     <packaging>pom</packaging>
     <name>${project.artifactId}</name>
     <description>一款基于 apache commons-pool2 和 jsch 实现的 sftp 连接池</description>
@@ -38,7 +38,6 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring-boot.version>2.3.7.RELEASE</spring-boot.version>
         <jsch.version>0.1.55</jsch.version>
 
         <!-- Maven Plugin Versions -->
@@ -57,16 +56,14 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
                 <groupId>com.jcraft</groupId>
                 <artifactId>jsch</artifactId>
                 <version>${jsch.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>1.18.12</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -78,6 +75,16 @@
         <developerConnection>scm:git:https://github.com/meilonme/sftp-pool</developerConnection>
     </scm>
 
+    <distributionManagement>
+        <repository>
+            <id>maven-releases</id>
+            <url>http://192.168.81.69:3804/repository/maven-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>maven-snapshots</id>
+            <url>http://192.168.81.69:3804/repository/maven-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <build>
         <plugins>
@@ -121,7 +128,6 @@
                     <reuseForks>false</reuseForks>
                 </configuration>
             </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
@@ -147,7 +153,6 @@
     <profiles>
         <profile>
             <id>release</id>
-
             <build>
                 <plugins>
                     <plugin>

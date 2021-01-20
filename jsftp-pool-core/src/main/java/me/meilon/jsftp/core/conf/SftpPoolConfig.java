@@ -47,7 +47,7 @@ public class SftpPoolConfig {
      * 链接关闭的超时时间, 毫秒值
      * 默认 10_000 毫秒
      */
-    private long evictorShutdownTimeoutMillis = BaseObjectPoolConfig.DEFAULT_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS;
+//    private long evictorShutdownTimeoutMillis = BaseObjectPoolConfig.DEFAULT_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS;
 
     /**
      * 对象空闲的最小时间，达到此值后空闲对象将可能会被移除。
@@ -136,8 +136,8 @@ public class SftpPoolConfig {
         return new Builder();
     }
 
-    public GenericKeyedObjectPoolConfig<SftpConnect> toGenericKeyedObjectPoolConfig(){
-        GenericKeyedObjectPoolConfig<SftpConnect> config = new GenericKeyedObjectPoolConfig<>();
+    public GenericKeyedObjectPoolConfig toGenericKeyedObjectPoolConfig(){
+        GenericKeyedObjectPoolConfig config = new GenericKeyedObjectPoolConfig();
         config.setMaxTotal(maxTotal);
         config.setMaxIdlePerKey(maxIdlePerKey);
         config.setMinIdlePerKey(minIdlePerKey);
@@ -146,7 +146,7 @@ public class SftpPoolConfig {
         config.setFairness(fairness);
         config.setMaxWaitMillis(maxWaitMillis);
         config.setMinEvictableIdleTimeMillis(minEvictableIdleTimeMillis);
-        config.setEvictorShutdownTimeoutMillis(evictorShutdownTimeoutMillis);
+//        config.setEvictorShutdownTimeoutMillis(evictorShutdownTimeoutMillis);
         config.setSoftMinEvictableIdleTimeMillis(softMinEvictableIdleTimeMillis);
         config.setNumTestsPerEvictionRun(numTestsPerEvictionRun);
         config.setEvictionPolicyClassName(evictionPolicyClassName);
@@ -180,10 +180,10 @@ public class SftpPoolConfig {
             return this;
         }
 
-        public Builder setEvictorShutdownTimeoutMillis(long evictorShutdownTimeoutMillis) {
-            config.setEvictorShutdownTimeoutMillis(evictorShutdownTimeoutMillis);
-            return this;
-        }
+//        public Builder setEvictorShutdownTimeoutMillis(long evictorShutdownTimeoutMillis) {
+//            config.setEvictorShutdownTimeoutMillis(evictorShutdownTimeoutMillis);
+//            return this;
+//        }
 
         public Builder setMinEvictableIdleTimeMillis(long minEvictableIdleTimeMillis) {
             config.setMinEvictableIdleTimeMillis(minEvictableIdleTimeMillis);
