@@ -6,7 +6,7 @@
 
     <groupId>me.meilon.jsftp</groupId>
     <artifactId>jsftp-pool</artifactId>
-    <version>0.1.15</version>
+    <version>0.1.16</version>
     <packaging>pom</packaging>
     <name>${project.artifactId}</name>
     <description>一款基于 apache commons-pool2 和 jsch 实现的 sftp 连接池</description>
@@ -74,17 +74,6 @@
         <connection>scm:git:https://github.com/meilonme/sftp-pool.git</connection>
         <developerConnection>scm:git:https://github.com/meilonme/sftp-pool</developerConnection>
     </scm>
-
-    <distributionManagement>
-        <repository>
-            <id>maven-releases</id>
-            <url>http://192.168.81.69:3804/repository/maven-releases/</url>
-        </repository>
-        <snapshotRepository>
-            <id>maven-snapshots</id>
-            <url>http://192.168.81.69:3804/repository/maven-snapshots/</url>
-        </snapshotRepository>
-    </distributionManagement>
 
     <build>
         <plugins>

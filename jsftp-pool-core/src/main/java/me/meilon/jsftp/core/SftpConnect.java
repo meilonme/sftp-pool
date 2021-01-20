@@ -69,6 +69,9 @@ public class SftpConnect implements Closeable {
      */
     public  boolean isDir(String directory) throws SftpException {
         SftpATTRS attrs = getAttrs(directory);
+        if (attrs == null){
+            return false;
+        }
         return attrs.isDir();
     }
 
@@ -80,6 +83,9 @@ public class SftpConnect implements Closeable {
      */
     public boolean isFile(String filePath) throws SftpException {
         SftpATTRS attrs = getAttrs(filePath);
+        if (attrs == null){
+            return false;
+        }
         return !attrs.isDir() && !attrs.isLink();
     }
 
@@ -304,7 +310,7 @@ public class SftpConnect implements Closeable {
      */
     public void uploadFile(InputStream fileIo, String remoteFilePath) throws SftpException {
         if (isDir(remoteFilePath)){
-            throw new IllegalAccessError(remoteFilePath + "is directory");
+            throw new IllegalAccessError(remoteFilePath + " is directory");
         }
         sftp.put(fileIo, remoteFilePath);
     }
