@@ -504,7 +504,7 @@ public class SftpConnect implements Closeable {
      * @throws SftpException SftpException
      */
     public void copyfile(String fromPath, String toPath, String fileName)
-            throws SftpException, IOException {
+            throws SftpException {
 
         String formFilePath = FileUtil.unite(fromPath, fileName);
         String toFilePath = FileUtil.unite(toPath, fileName);
@@ -515,18 +515,34 @@ public class SftpConnect implements Closeable {
      * 复制文件
      * 如果指定的目标文件名和原始文件名不同, 复制完成后文件名会改变
      *
-     * @param from 原始文件路径, 必须包含文件名
-     * @param to   目标文件路径, 必须包含文件名
+     * @param fromFilePath 原始文件路径, 必须包含文件名
+     * @param toFilePath   目标文件路径, 必须包含文件名
      * @throws SftpException SftpException
      */
-    public void copyfile(String from, String to) throws SftpException, IOException {
-        try(InputStream in = sftp.get(from);
-            OutputStream os = sftp.put(to)) {
+    public void copyfile(String fromFilePath, String toFilePath) throws SftpException {
+        InputStream nInputStream = null;
+        try(ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
+            InputStream tInputStream = this.openFile(fromFilePath)) {
+
+            byte[] buffer = new byte[1024];
             int len;
-            while (-1 < (len = in.read())){
-                os.write(len);
+            while ((len = tInputStream.read(buffer)) > -1 ) {
+                outBuffer.write(buffer, 0, len);
             }
-            os.flush();
+            outBuffer.flush();
+
+            nInputStream = new ByteArrayInputStream(outBuffer.toByteArray());
+            uploadFile(nInputStream, toFilePath);
+        } catch (IOException e) {
+            throw new SftpRunException(e);
+        } finally {
+            try {
+                if (null != nInputStream){
+                    nInputStream.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
