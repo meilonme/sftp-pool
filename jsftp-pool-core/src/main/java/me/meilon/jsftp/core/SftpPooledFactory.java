@@ -373,6 +373,7 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
         if (homePath != null){
             conn.cd(homePath);
         }
+        log.debug("passivateObject {}", sftpId);
         super.passivateObject(sftpId, p);
     }
 

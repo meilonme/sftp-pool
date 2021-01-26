@@ -5,6 +5,7 @@ import com.jcraft.jsch.*;
 import lombok.extern.slf4j.Slf4j;
 import me.meilon.jsftp.core.conf.SftpConnConfig;
 import me.meilon.jsftp.core.conf.SftpMode;
+import me.meilon.jsftp.core.exception.SftpRunException;
 import me.meilon.jsftp.core.utils.FileUtil;
 
 import java.io.*;
@@ -140,12 +141,12 @@ public class SftpConnect implements Closeable {
     }
 
     /**
-     * 切换目录
-     * @param path 路径
+     * 删除sftp服务器上的文件夹
+     * @param remotePath 远程目录
      * @throws SftpException SftpException
      */
-    public void cd(String path) throws SftpException {
-        sftp.cd(path);
+    public void rmdir(String remotePath) throws SftpException{
+        sftp.rmdir(remotePath);
     }
 
     /**
@@ -198,6 +199,10 @@ public class SftpConnect implements Closeable {
         sftp.chmod(permsion, directory);
     }
 
+    public  void chown(int uid, String path) throws SftpException {
+        sftp.chown(uid, path);
+    }
+
     /**
      * 重命名文件或者目录 ,移动文件或者目录
      *
@@ -207,6 +212,15 @@ public class SftpConnect implements Closeable {
      */
     public void rename(String oldpath, String newpath) throws SftpException {
         sftp.rename(oldpath, newpath);
+    }
+
+    /**
+     * 切换目录
+     * @param path 路径
+     * @throws SftpException SftpException
+     */
+    public void cd(String path) throws SftpException {
+        sftp.cd(path);
     }
 
     /**
@@ -273,6 +287,7 @@ public class SftpConnect implements Closeable {
      * @throws SftpException SftpException
      */
     public void uploadFile(String filePath, String remotePath) throws SftpException {
+        remotePath = remoteAbsolutePath(filePath, remotePath);
         sftp.put(filePath, remotePath);
     }
 
@@ -280,12 +295,16 @@ public class SftpConnect implements Closeable {
      * 按照指定模式上传文件
      * @param filePath 本地文件路径
      * @param remotePath 远程文件路径
+     *                   注: remotePath 可以是目录, 也可以是文件
+     *                   如果是目录则按照原文件名上传至 remotePath 目录
+     *                   如果是文件则按照指定的文件名上传
      * @param mode 文件传输模式
      * @see SftpMode
      * @throws SftpException SftpException
      */
     public void uploadFile(String filePath, String remotePath,
                            SftpMode mode) throws SftpException {
+        remotePath = remoteAbsolutePath(filePath, remotePath);
         sftp.put(filePath, remotePath, mode.getMode());
     }
 
@@ -299,6 +318,7 @@ public class SftpConnect implements Closeable {
      */
     public void uploadFile(String filePath, String remotePath,
                            SftpProgressMonitor monitor) throws SftpException {
+        remotePath = remoteAbsolutePath(filePath, remotePath);
         sftp.put(filePath, remotePath, monitor);
     }
 
@@ -310,7 +330,7 @@ public class SftpConnect implements Closeable {
      */
     public void uploadFile(InputStream fileIo, String remoteFilePath) throws SftpException {
         if (isDir(remoteFilePath)){
-            throw new IllegalAccessError(remoteFilePath + " is directory");
+            throw new SftpRunException(remoteFilePath + " is directory");
         }
         sftp.put(fileIo, remoteFilePath);
     }
@@ -327,7 +347,7 @@ public class SftpConnect implements Closeable {
      */
     public OutputStream uploadFile(String remoteFilePath) throws SftpException {
         if (isDir(remoteFilePath)) {
-            throw new IllegalAccessError("remoteFilePath is not fount");
+            throw new SftpRunException(remoteFilePath + " is directory");
         }
         return sftp.put(remoteFilePath);
     }
@@ -340,14 +360,14 @@ public class SftpConnect implements Closeable {
      */
     public void uploadFile(File localFile, String remoteFilePath) throws SftpException {
         if (!localFile.isFile()){
-            throw new IllegalAccessError("localFile is not found");
+            throw new SftpRunException(localFile + " is not found");
         }
         FileInputStream in;
         try {
             in = new FileInputStream(localFile);
-            sftp.put(in,remoteFilePath);
+            sftp.put(in, remoteFilePath);
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            throw new SftpRunException(e);
         }
 
     }
@@ -372,7 +392,10 @@ public class SftpConnect implements Closeable {
     public void uploadFiles(String directory, String remoteDir, FileFilter filter) throws SftpException {
         File filePath = new File(directory);
         if (!filePath.isDirectory() || !filePath.exists()){
-            return;
+            throw new SftpRunException(directory + "is not directory");
+        }
+        if (!isDir(remoteDir)){
+            throw new SftpRunException(remoteDir + "is not directory");
         }
         File[] files;
         if (filter == null){
@@ -399,6 +422,18 @@ public class SftpConnect implements Closeable {
     }
 
     /**
+     * 打开指定文件名的文件, 返回InputStream
+     * 失败返回 null
+     *
+     * @param filePath 要打开的文件名
+     * @return io流
+     * @throws SftpException SftpException
+     */
+    public InputStream openFile(String filePath) throws SftpException {
+        return sftp.get(filePath);
+    }
+
+    /**
      * 下载文件，下载过程中采用重命名防止被其他程序误处理
      *
      * @param remotePath  远程目录
@@ -409,49 +444,37 @@ public class SftpConnect implements Closeable {
      */
     public boolean downloadAsnFile(String remotePath, String fileName,
                                     String savePath, String suffixPattren) {
-        boolean status;
-        FileOutputStream fileOutputStream = null;
         try {
             File fileDir = new File(savePath);
-            if (!fileDir.exists()) {
-                fileDir.mkdirs();
-            }
-            File tempFile = new File(FileUtil.unite(savePath, fileName + suffixPattren));
-            fileOutputStream = new FileOutputStream(tempFile);
+            if (!fileDir.exists() && fileDir.mkdirs()) {
+                String remoteFile = FileUtil.unite(remotePath, fileName);
+                String tempFileName = FileUtil.unite(savePath, fileName + suffixPattren);
+                sftp.get(remoteFile, tempFileName);
 
-            sftp.get(FileUtil.unite(remotePath, fileName), fileOutputStream);
-            File file = new File(FileUtil.unite(savePath, fileName));
-            status = tempFile.renameTo(file);
+                File tempFile = new File(tempFileName);
+                File file = new File(FileUtil.unite(savePath, fileName));
+                return tempFile.renameTo(file);
+            }
         } catch (Exception e) {
-            status = false;
             log.error("下载文件异常，原因：{}", e.getMessage());
-        } finally {
-            try {
-                if (null != fileOutputStream) {
-                    fileOutputStream.close();
-                }
-            } catch (IOException e) {
-                log.error("关闭文件{}出错", fileName);
-            }
         }
-
-        return status;
+        return false;
     }
 
     /**
-     * 列出指定目录下的文件
+     * 列出指定目录下的文件名列表
      * 失败时返回空list
      *
-     * @param directory 要列出的目录
+     * @param remotePath 要列出的远程目录
      * @return 文件名列表
      * @throws SftpException SftpException
      */
-    public List<String> listFileNames(String directory) throws SftpException {
+    public List<String> listFileNames(String remotePath) throws SftpException {
 
         List<String> ftpFileNameList = new ArrayList<>();
 
-        if (directory != null && !directory.isEmpty()) {
-            Vector<ChannelSftp.LsEntry> sftpFile = sftp.ls(directory);
+        if (remotePath != null && !remotePath.isEmpty()) {
+            Vector<ChannelSftp.LsEntry> sftpFile = sftp.ls(remotePath);
             for (ChannelSftp.LsEntry item : sftpFile) {
                 ftpFileNameList.add(item.getFilename());
             }
@@ -459,24 +482,17 @@ public class SftpConnect implements Closeable {
         return ftpFileNameList;
     }
 
-    public List<ChannelSftp.LsEntry> listFiles(String directory) throws SftpException {
-        if (directory == null || directory.isEmpty()) {
-            throw new IllegalAccessError("directory is null!");
-        }
-        Vector<ChannelSftp.LsEntry> sftpFile = sftp.ls(directory);
-        return new ArrayList<>(sftpFile);
-    }
-
     /**
-     * 打开指定文件名的文件, 返回InputStream
-     * 失败返回 null
-     *
-     * @param filePath 要打开的文件名
-     * @return io流
+     * 列出指定目录下的文件属性列表
+     * @param remotePath 要列出的远程目录
+     * @return 文件属性列表
      * @throws SftpException SftpException
      */
-    public InputStream openFile(String filePath) throws SftpException {
-        return sftp.get(filePath);
+    public List<ChannelSftp.LsEntry> listFiles(String remotePath) throws SftpException {
+        if (remotePath == null || remotePath.isEmpty()) {
+            throw new IllegalAccessError("directory is null!");
+        }
+        return sftp.ls(remotePath);
     }
 
     /**
@@ -521,5 +537,21 @@ public class SftpConnect implements Closeable {
     @Override
     public void close() {
         SftpPooledFactory.closeSftp(this);
+    }
+
+
+    private String remoteAbsolutePath(String filePath, String remotePath) throws SftpException{
+        boolean isDir = remotePath.endsWith("/");
+        if(isDir || isDir(remotePath)){
+            File file = new File(filePath);
+            String filename = file.getName();
+            if (isDir){
+                remotePath = remotePath + filename;
+            }
+            else {
+                remotePath = remotePath + "/" + filename;
+            }
+        }
+        return remotePath;
     }
 }
