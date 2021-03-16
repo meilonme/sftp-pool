@@ -10,7 +10,7 @@ spring-boot 项目引入
 <dependency>
     <groupId>me.meilon.jsftp</groupId>
     <artifactId>jsftp-spring-boot-starter</artifactId>
-    <version>0.1.15</version>
+    <version>${最新稳定版本}</version>
 </dependency>
 ```
 引入 jsftp-spring-boot-starter 后, 启动项目会自动加载配置;
@@ -57,7 +57,13 @@ sftp-pool:
 ### jsftpClient 
 
 使用 jsftpClient 会自动从链接池获取 sftp 链接, 使用完毕后自动交还给连接池; 因此可以避免链接忘记关闭的情况;
-
+```xml
+<dependency>
+    <groupId>me.meilon.jsftp</groupId>
+    <artifactId>jsftp-pool-client</artifactId>
+    <version>${最新稳定版本}</version>
+</dependency>
+```
 jsftpClient 提供了两个函数式调用的 run 方法;
 用户也可以继承 JsftpClient 进行扩展;
 
@@ -89,9 +95,9 @@ client.run(sftp ->{
 
 ```xml
 <dependency>
-  <groupId>me.meilon.sftp</groupId>
-  <artifactId>sftp-pool-core</artifactId>
-    <version>0.1.15</version>
+    <groupId>me.meilon.jsftp</groupId>
+    <artifactId>sftp-pool-core</artifactId>
+    <version>${最新稳定版本}</version>
 </dependency>
 ```
 

@@ -23,6 +23,8 @@ public class SftpConnect implements Closeable {
 
     private final ChannelSftp sftp;
 
+    private final Session session;
+
     private final SftpConnConfig config;
 
     /**
@@ -30,9 +32,10 @@ public class SftpConnect implements Closeable {
      */
     private boolean isPooledObject = false;
 
-    protected SftpConnect(SftpConnConfig config, ChannelSftp sftp) {
+    protected SftpConnect(SftpConnConfig config, ChannelSftp sftp, Session session) {
         this.config = config;
         this.sftp = sftp;
+        this.session = session;
     }
 
     public boolean isPooledObject() {
@@ -474,10 +477,18 @@ public class SftpConnect implements Closeable {
         List<String> ftpFileNameList = new ArrayList<>();
 
         if (remotePath != null && !remotePath.isEmpty()) {
-            Vector<ChannelSftp.LsEntry> sftpFile = sftp.ls(remotePath);
-            for (ChannelSftp.LsEntry item : sftpFile) {
-                ftpFileNameList.add(item.getFilename());
-            }
+            sftp.ls(remotePath, lsEntry->{
+                if (lsEntry == null){
+                    return ChannelSftp.LsEntrySelector.BREAK;
+                }
+                String fileName = lsEntry.getFilename();
+                if (fileName != null
+                        && !".".equals(fileName)
+                        && !"..".equals(fileName)){
+                    ftpFileNameList.add(lsEntry.getFilename());
+                }
+                return ChannelSftp.LsEntrySelector.CONTINUE;
+            });
         }
         return ftpFileNameList;
     }
@@ -493,6 +504,13 @@ public class SftpConnect implements Closeable {
             throw new IllegalAccessError("directory is null!");
         }
         return sftp.ls(remotePath);
+    }
+
+    public void listFiles(String remotePath, ChannelSftp.LsEntrySelector selector) throws SftpException {
+        if (remotePath == null || remotePath.isEmpty()) {
+            throw new IllegalAccessError("directory is null!");
+        }
+        sftp.ls(remotePath,selector);
     }
 
     /**
@@ -548,6 +566,7 @@ public class SftpConnect implements Closeable {
 
     void disconnect(){
         sftp.disconnect();
+        session.disconnect();
     }
 
     @Override

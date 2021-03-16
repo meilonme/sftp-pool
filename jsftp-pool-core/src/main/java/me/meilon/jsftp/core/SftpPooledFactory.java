@@ -1,9 +1,6 @@
 package me.meilon.jsftp.core;
 
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
+import com.jcraft.jsch.*;
 import lombok.extern.slf4j.Slf4j;
 import me.meilon.jsftp.core.exception.SftpConfigException;
 import me.meilon.jsftp.core.conf.SftpConnConfig;
@@ -99,9 +96,8 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
         session.connect();
         ChannelSftp channel = (ChannelSftp) session.openChannel("sftp");
         channel.connect();
-
         SftpConnConfig conf = new SftpConnConfig(host, port, user, password, id);
-        return new SftpConnect(conf, channel);
+        return new SftpConnect(conf, channel, session);
     }
 
 
