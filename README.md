@@ -70,7 +70,7 @@ jsftpClient 提供了两个函数式调用的 run 方法;
 jsftpClient 使用样例;
 
 有返回值的调用
-```java
+```
 JsftpClientFactory jsftpClientFactory = new JsftpClientFactory();
 JsftpClient client = jsftpClientFactory.createSftpClient(host,port,username,password);
 List<String> fileNames = client.run(sftp ->{
@@ -80,7 +80,7 @@ List<String> fileNames = client.run(sftp ->{
 ```
 
 无返回值的调用
-```java
+```
 JsftpClientFactory jsftpClientFactory = new JsftpClientFactory();
 JsftpClient client = jsftpClientFactory.createSftpClient(host,port,username,password);
 client.run(sftp ->{
@@ -91,8 +91,8 @@ client.run(sftp ->{
 
 
 ### sftp-pool-core
-非 spring boot 项目可以直接引入 sftp-pool-core
 
+基于 maven 引入 sftp-pool-core
 ```xml
 <dependency>
     <groupId>me.meilon.jsftp</groupId>
@@ -101,20 +101,67 @@ client.run(sftp ->{
 </dependency>
 ```
 
+sftp-pool-core 提供了基础的sftpi链接池功能;
 
-通过连接池创建一个sftp链接
-```java
-    String sftpId = "sftp1";
+使用 sftp-pool-core 用户需要自行初始化链接池工厂 SftpPooledFactory;
+
+使用 SftpPooledFactory getSftpPool() 方法获取链接池(使用懒加载模式, 首次获取链接池时自动初始化链接池);
+
+使用 SftpPooledFactory setSftpConnConfig() 方法设置一个SFTP链接配置. 
+可以设置多个SFTP链接配置, SftpPooledFactory 会根据 sftpId 分配到不同的池里
+
+样例: 初始化链接池
+```
+    // 创建链接池工厂
     SftpPooledFactory factory = new SftpPooledFactory();
-    SftpPool pool = factory.createSftpPool();
+
+    // 设置SFTP链接配置
+    String sftpId = "sftp1";
+    String host = "127.0.0.1";
+    int port = 22;
+    String username = "user";
+    String password = "psw";
     factory.setSftpConnConfig(host,port, username, password,sftpId,false);
+    
+    // 可设置多个SFTP链接配置, SftpPooledFactory 会根据 sftpId 分配到不同的池里
+    String sftpId2 = "sftp2";
+    String host2 = "127.0.0.1";
+    int port2 = 22;
+    String username2 = "user";
+    String password2 = "psw";
+    factory.setSftpConnConfig(host2,port2, username2, password2,sftpId2,false);
+
+```
+
+使用 SftpPool borrowObject() 方法获取一个SFTP链接, 需要前面设置SFTP链接配置对应的 sftpId 作为入参
+
+SftpConnect 实现了Closeable接口, 推荐使用自动关闭;
+当然也可以手动调用 SftpConnect 的 close() 方法以归还 SFTP 链接回链接池;
+
+样例: 业务代码中使用链接池获取SFTP链接;
+```
+    String sftpId = "sftp1";
+
+    // 通过 SftpPooledFactory 获取链接池
+    SftpPool pool = factory.getSftpPool();
+    
+    // 通过连接池的 borrowObject 方法获取SFTP链接
     try (SftpConnect sftp = pool.borrowObject(sftpId)){
         List<ChannelSftp.LsEntry> files =  sftp.listFiles("/data/");
         for (ChannelSftp.LsEntry file : files) {
-
             System.out.println(file.getFilename());
         }
     } catch (Exception e) {
         e.printStackTrace();
     }
+```
+SftpPooledFactory 有一个静态方法 createConnect() 可用于创建一个SFTP链接;
+
+需要注意的是, 使用此方法创建的链接不会被纳管到链接池, 当你调用 SftpConnect 的 close() 方法时, 该链接不会被返还到链接池中, 而是直接关闭此链接;
+```
+    String host = "127.0.0.1";
+    int port = 22;
+    String username = "user";
+    String password = "psw";
+    SftpConnect sftp = SftpPooledFactory.createConnect(host,port, username, password);
 ```
