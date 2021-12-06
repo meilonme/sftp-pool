@@ -1,8 +1,7 @@
 package me.meilon.jsftp.core.utils;
 
 
-import java.io.*;
-import java.util.zip.GZIPInputStream;
+import java.io.File;
 
 /**
  * 文件工具类

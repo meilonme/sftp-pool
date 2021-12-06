@@ -1,10 +1,8 @@
 package me.meilon.jsftp.core;
 
 
-
-import me.meilon.jsftp.core.exception.SftpConfigException;
 import me.meilon.jsftp.core.conf.SftpConnConfig;
-import me.meilon.jsftp.core.conf.SftpPoolConfig;
+import me.meilon.jsftp.core.exception.SftpConfigException;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
 

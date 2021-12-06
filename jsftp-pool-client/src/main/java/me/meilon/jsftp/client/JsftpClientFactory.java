@@ -11,43 +11,47 @@ import java.util.Map;
  * 用于构造 JsftpClient
  * @author meilon
  */
-public class JsftpClientFactory extends SftpPooledFactory{
+public class JsftpClientFactory{
 
+    private final SftpPooledFactory pooledFactory;
 
     public JsftpClientFactory() {
-        super();
+        this.pooledFactory = new SftpPooledFactory();
     }
 
     public JsftpClientFactory(Map<String, SftpConnConfig> connConfigMap) {
-        super(connConfigMap);
+        this.pooledFactory = new SftpPooledFactory(connConfigMap);
     }
 
     public JsftpClientFactory(SftpPoolConfig sftpPoolConfig) {
-        super(sftpPoolConfig);
+        this.pooledFactory = new SftpPooledFactory(sftpPoolConfig);
     }
 
     public JsftpClientFactory(Map<String, SftpConnConfig> connConfigMap, SftpPoolConfig sftpPoolConfig) {
-        super(connConfigMap, sftpPoolConfig);
+        this.pooledFactory = new SftpPooledFactory(connConfigMap,sftpPoolConfig);
     }
 
     public JsftpClient createSftpClient(String host, Integer port,
                                         String user, String password){
 
-        SftpConnConfig config = setSftpConnConfig(host,port,user,password);
-        return new JsftpClient(getSftpPool(),config);
+        SftpConnConfig config = pooledFactory.setSftpConnConfig(host,port,user,password);
+        return new JsftpClient(pooledFactory.getSftpPool(),config);
     }
 
     public JsftpClient createSftpClient(String host, Integer port,
                                         String user, String password, String sftpId){
-        SftpConnConfig config = setSftpConnConfig(host,port,user,password,sftpId);
-        return new JsftpClient(getSftpPool(), config);
+        SftpConnConfig config = pooledFactory.setSftpConnConfig(host,port,user,password,sftpId);
+        return new JsftpClient(pooledFactory.getSftpPool(), config);
     }
 
     public JsftpClient createSftpClient(String host, Integer port,
                                         String user, String password,
                                         String sftpId, boolean autoDisconnect){
-        SftpConnConfig config = setSftpConnConfig(host,port,user,password,sftpId, autoDisconnect);
-        return new JsftpClient(getSftpPool(), config);
+        SftpConnConfig config = pooledFactory.setSftpConnConfig(host,port,user,password,sftpId, autoDisconnect);
+        return new JsftpClient(pooledFactory.getSftpPool(), config);
     }
 
+    public SftpPooledFactory getPooledFactory() {
+        return pooledFactory;
+    }
 }

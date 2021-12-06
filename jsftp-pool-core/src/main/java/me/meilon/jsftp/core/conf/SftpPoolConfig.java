@@ -1,10 +1,8 @@
 package me.meilon.jsftp.core.conf;
 
 
-
 import lombok.Getter;
 import lombok.Setter;
-import me.meilon.jsftp.core.SftpConnect;
 import me.meilon.jsftp.core.SftpEvictionPolicy;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.BaseObjectPoolConfig;

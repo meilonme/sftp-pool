@@ -9,7 +9,8 @@ import me.meilon.jsftp.core.exception.SftpRunException;
 import me.meilon.jsftp.core.utils.FileUtil;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**

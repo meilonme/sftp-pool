@@ -1,10 +1,13 @@
 package me.meilon.jsftp.core;
 
-import com.jcraft.jsch.*;
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 import lombok.extern.slf4j.Slf4j;
-import me.meilon.jsftp.core.exception.SftpConfigException;
 import me.meilon.jsftp.core.conf.SftpConnConfig;
 import me.meilon.jsftp.core.conf.SftpPoolConfig;
+import me.meilon.jsftp.core.exception.SftpConfigException;
 import org.apache.commons.pool2.BaseKeyedPooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectState;
@@ -26,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author meilon
  */
 @Slf4j
-public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, SftpConnect> {
+public final class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, SftpConnect> {
 
     /**
      * sftp链接的配置数据
@@ -197,7 +200,7 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
      * @param password 密码
      * @param sftpId sftp的唯一id
      * @param autoDisconnect 是否自动断开链接
-     *                       设为true: 归还sftp链接时自动关闭链接
+     *                       设为true: 归还sftp链接时自动关闭链接, 而非返还连接池
      * @return sftp链接配置对象
      */
     public SftpConnConfig setSftpConnConfig(String host, Integer port,
@@ -233,9 +236,7 @@ public class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String, Sftp
      * @param configMap sftp链接配置Map对象
      */
     public void setSftpConnConfigMap(Map<String,SftpConnConfig> configMap){
-        for (Map.Entry<String, SftpConnConfig> item : configMap.entrySet()) {
-            connConfigMap.put(item.getKey(),item.getValue());
-        }
+        connConfigMap.putAll(configMap);
     }
 
     /**

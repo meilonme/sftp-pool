@@ -16,14 +16,32 @@ public class JsftpConnProperties {
      */
     private String id;
 
+    /**
+     * 远程服务器的地址
+     */
     private String host;
 
+    /**
+     * 远程服务器的端口号
+     */
     private int port;
 
+    /**
+     * 用于登录远程服务器的用户名
+     */
     private String userName;
 
+    /**
+     * 用于登录远程服务器的密码
+     */
     private String password;
 
+    /**
+     * 是否自动关闭
+     * 设为 true 时,
+     * 使用此配置创建的链接在使用完后不回返还给连接池, 而是直接关闭
+     * 默认false
+     */
     private Boolean autoDisconnect = false;
 
     public String getId() {

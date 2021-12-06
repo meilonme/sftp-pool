@@ -1,11 +1,9 @@
 package me.meilon.jsftp.autoconfigure;
 
 
-
 import me.meilon.jsftp.core.conf.SftpConnConfig;
 import me.meilon.jsftp.core.conf.SftpPoolConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +12,6 @@ import java.util.Map;
  * sftp 连接池 spring 配置类
  * @author meilon
  */
-@Component
 @ConfigurationProperties(prefix = "sftp-pool")
 public class JsftpPoolProperties extends SftpPoolConfig {
 
