@@ -22,6 +22,7 @@ public class SftpPool extends GenericKeyedObjectPool<String, SftpConnect> {
      * 从连接池中获取一个sftp链接
      * 注意: 使用完后需要自行调用 {@link SftpPool#returnSftp(SftpConnect) } 方法交还
      * @param config sftp链接配置
+     * @throws Exception 配置文件为空或获取资源失败时抛出异常
      * @return sftp链接对象
      */
     public SftpConnect borrowObject(SftpConnConfig config) throws Exception {
@@ -47,6 +48,7 @@ public class SftpPool extends GenericKeyedObjectPool<String, SftpConnect> {
      * @param port 端口
      * @param user 用户名
      * @param password 密码
+     * @throws Exception 配置文件为空或获取资源失败时抛出异常
      * @return sftp链接对象
      */
     public SftpConnect borrowObject(String host, Integer port,

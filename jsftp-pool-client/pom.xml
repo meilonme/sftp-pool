@@ -6,10 +6,9 @@
     <parent>
         <groupId>me.meilon.jsftp</groupId>
         <artifactId>jsftp-pool</artifactId>
-        <version>0.1.20</version>
+        <version>0.1.21</version>
     </parent>
     <artifactId>jsftp-pool-client</artifactId>
-    <name>${project.artifactId}</name>
     <packaging>jar</packaging>
 
 
@@ -17,7 +16,7 @@
         <dependency>
             <groupId>me.meilon.jsftp</groupId>
             <artifactId>jsftp-pool-core</artifactId>
-            <version>${project.version}</version>
+            <version>0.1.21</version>
         </dependency>
     </dependencies>
 
@@ -26,6 +25,14 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

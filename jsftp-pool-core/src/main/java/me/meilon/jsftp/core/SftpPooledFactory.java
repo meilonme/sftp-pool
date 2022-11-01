@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * sftp 连接池工厂
- *
+ * </p>
  * 池化对象的状态定义在 {@link org.apache.commons.pool2.PooledObjectState} 枚举中，有以下值
  * IDLE 在池中，处于空闲状态
  * ALLOCATED 被使用中
@@ -71,7 +71,7 @@ public final class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String
 
     /**
      * 创建一个 sftp 链接, 此链接不会交给链接池管理
-     *
+     * </p>
      * 注: 此工厂静态方法创建的 sftp 链接不会纳管到链接池中, 注意自行关闭
      * 此方法保留给特殊情况下使用, 不推荐使用;
      * 如果sftp服务端对链接有某些限制情况需要在使用完成后立即关闭, 建议在配置中使用 autoDisconnect
@@ -81,6 +81,7 @@ public final class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String
      * @param port 端口
      * @param user 用户名
      * @param password 密码
+     * @throws JSchException sftp连接失败时抛出异常
      * @return sftp 链接
      */
     public static SftpConnect createConnect(String host, Integer port,
@@ -150,6 +151,7 @@ public final class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String
      * @param port 端口
      * @param user 用户名
      * @param password 密码
+     * @return SftpConnConfig sftp连接配置对象
      */
     public SftpConnConfig setSftpConnConfig(String host, Integer port,
                                             String user, String password){
