@@ -3,11 +3,14 @@ package me.meilon.jsftp.core.conf;
 
 import lombok.Getter;
 import lombok.Setter;
+import me.meilon.jsftp.core.SftpConnect;
 import me.meilon.jsftp.core.SftpEvictionPolicy;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.BaseObjectPoolConfig;
 import org.apache.commons.pool2.impl.EvictionPolicy;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
+
+import java.time.Duration;
 
 
 /**
@@ -37,15 +40,30 @@ public class SftpPoolConfig {
      * {@link #setBlockWhenExhausted } 为 true 时有效。
      * -1 代表无时间限制，一直阻塞直到有可用的资源
      * 默认 -1
+     * @deprecated Use {@link #setMaxWaitTime(Duration)} (Duration)}.
      */
-    private long maxWaitMillis = BaseObjectPoolConfig.DEFAULT_MAX_WAIT_MILLIS;
-
+    @Deprecated
+    private long maxWaitMillis = BaseObjectPoolConfig.DEFAULT_MAX_WAIT.toMillis();
+    /**
+     * 获取资源的等待时间。
+     * {@link #setBlockWhenExhausted } 为 true 时有效。
+     * -1 代表无时间限制，一直阻塞直到有可用的资源
+     * 默认 -1
+     */
+    private Duration maxWaitTime = BaseObjectPoolConfig.DEFAULT_MAX_WAIT;
 
     /**
      * 链接关闭的超时时间, 毫秒值
      * 默认 10_000 毫秒
+     * @deprecated Use {@link #setEvictorShutdownTimeoutTime(Duration)} (Duration)}.
      */
-//    private long evictorShutdownTimeoutMillis = BaseObjectPoolConfig.DEFAULT_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS;
+    @Deprecated
+    private long evictorShutdownTimeoutMillis = BaseObjectPoolConfig.DEFAULT_EVICTOR_SHUTDOWN_TIMEOUT.toMillis();
+    /**
+     * 链接关闭的超时时间, 毫秒值
+     * 默认 10_000 毫秒
+     */
+    private Duration evictorShutdownTimeoutTime = BaseObjectPoolConfig.DEFAULT_EVICTOR_SHUTDOWN_TIMEOUT;
 
     /**
      * 对象空闲的最小时间，达到此值后空闲对象将可能会被移除。
@@ -53,16 +71,35 @@ public class SftpPoolConfig {
      * 有效性验证通过 {@link me.meilon.jsftp.core.SftpPooledFactory#validateObject(String, PooledObject)} 方法执行
      * -1 表示不移除.
      * 默认 30 分钟
+     * @deprecated Use {@link #setMinEvictableIdleTime(Duration)} (Duration)}.
      */
-    private long minEvictableIdleTimeMillis = BaseObjectPoolConfig.DEFAULT_MIN_EVICTABLE_IDLE_TIME_MILLIS;
+    @Deprecated
+    private long minEvictableIdleTimeMillis = BaseObjectPoolConfig.DEFAULT_MIN_EVICTABLE_IDLE_DURATION.toMillis();
+    /**
+     * 对象空闲的最小时间，达到此值后空闲对象将可能会被移除。
+     * 不受最小连接数限制影响
+     * 有效性验证通过 {@link me.meilon.jsftp.core.SftpPooledFactory#validateObject(String, PooledObject)} 方法执行
+     * -1 表示不移除.
+     * 默认 30 分钟
+     */
+    private Duration minEvictableIdleTime = BaseObjectPoolConfig.DEFAULT_MIN_EVICTABLE_IDLE_DURATION;
 
     /**
      * 连接空闲的最小时间，达到此值后空闲链接将会被移除，
      * 但会保留最小空闲连接数
      * 有效性验证通过 {@link me.meilon.jsftp.core.SftpPooledFactory#validateObject(String, PooledObject)} 方法执行
      * 默认为-1.
+     * @deprecated Use {@link #setMinEvictableIdleTime(Duration)} (Duration)}.
      */
-    private long softMinEvictableIdleTimeMillis = BaseObjectPoolConfig.DEFAULT_SOFT_MIN_EVICTABLE_IDLE_TIME_MILLIS;
+    @Deprecated
+    private long softMinEvictableIdleTimeMillis = BaseObjectPoolConfig.DEFAULT_SOFT_MIN_EVICTABLE_IDLE_DURATION.toMillis();
+    /**
+     * 连接空闲的最小时间，达到此值后空闲链接将会被移除，
+     * 但会保留最小空闲连接数
+     * 有效性验证通过 {@link me.meilon.jsftp.core.SftpPooledFactory#validateObject(String, PooledObject)} 方法执行
+     * 默认为-1.
+     */
+    private Duration softMinEvictableIdleTime = BaseObjectPoolConfig.DEFAULT_SOFT_MIN_EVICTABLE_IDLE_DURATION;
 
     /**
      * “空闲链接”检测线程每次检测链接有效性时抽查的资源数;
@@ -90,8 +127,17 @@ public class SftpPoolConfig {
      * 如果为负值，表示不运行“检测线程”。
      * 有效性验证是通过 {@link me.meilon.jsftp.core.SftpPooledFactory#validateObject(String, PooledObject)} 方法执行的
      * 默认值 -1L
+     * @deprecated Use {@link #setMinEvictableIdleTime(Duration)} (Duration)}.
      */
-    private long timeBetweenEvictionRunsMillis = BaseObjectPoolConfig.DEFAULT_TIME_BETWEEN_EVICTION_RUNS_MILLIS;
+    @Deprecated
+    private long timeBetweenEvictionRunsMillis = BaseObjectPoolConfig.DEFAULT_TIME_BETWEEN_EVICTION_RUNS.toMillis();
+    /**
+     * 设为正整数, 表示对池中空闲链接进行有效性校验的周期，毫秒数。
+     * 如果为负值，表示不运行“检测线程”。
+     * 有效性验证是通过 {@link me.meilon.jsftp.core.SftpPooledFactory#validateObject(String, PooledObject)} 方法执行的
+     * 默认值 -1L
+     */
+    private Duration timeBetweenEvictionRuns = BaseObjectPoolConfig.DEFAULT_TIME_BETWEEN_EVICTION_RUNS;
 
     /**
      * 资源耗尽时，是否阻塞等待获取资源，
@@ -102,8 +148,9 @@ public class SftpPoolConfig {
     /**
      * 每个key最小保持的空闲链接数.
      * 默认 1
-     * @see #setSoftMinEvictableIdleTimeMillis(long)
-     * @see #setMinEvictableIdleTimeMillis(long)
+     *
+     * @see #setSoftMinEvictableIdleTime(Duration) (long)
+     * @see #setMinEvictableIdleTime(Duration) (long)
      */
     private int minIdlePerKey = 1;
 
@@ -129,29 +176,28 @@ public class SftpPoolConfig {
     private int maxTotal = GenericKeyedObjectPoolConfig.DEFAULT_MAX_TOTAL;
 
 
-
-    public static Builder builder(){
+    public static Builder builder() {
         return new Builder();
     }
 
-    public GenericKeyedObjectPoolConfig toGenericKeyedObjectPoolConfig(){
-        GenericKeyedObjectPoolConfig config = new GenericKeyedObjectPoolConfig();
+    public GenericKeyedObjectPoolConfig<SftpConnect> toGenericKeyedObjectPoolConfig() {
+        GenericKeyedObjectPoolConfig<SftpConnect> config = new GenericKeyedObjectPoolConfig<>();
         config.setMaxTotal(maxTotal);
         config.setMaxIdlePerKey(maxIdlePerKey);
         config.setMinIdlePerKey(minIdlePerKey);
         config.setMaxTotalPerKey(maxTotalPerKey);
         config.setLifo(lifo);
         config.setFairness(fairness);
-        config.setMaxWaitMillis(maxWaitMillis);
-        config.setMinEvictableIdleTimeMillis(minEvictableIdleTimeMillis);
-//        config.setEvictorShutdownTimeoutMillis(evictorShutdownTimeoutMillis);
-        config.setSoftMinEvictableIdleTimeMillis(softMinEvictableIdleTimeMillis);
+        config.setMaxWait(maxWaitTime);
+        config.setMinEvictableIdleTime(minEvictableIdleTime);
+        config.setEvictorShutdownTimeout(evictorShutdownTimeoutTime);
+        config.setSoftMinEvictableIdleTime(softMinEvictableIdleTime);
+        config.setTimeBetweenEvictionRuns(timeBetweenEvictionRuns);
         config.setNumTestsPerEvictionRun(numTestsPerEvictionRun);
         config.setEvictionPolicyClassName(evictionPolicyClassName);
         config.setTestOnCreate(testOnCreate);
         config.setBlockWhenExhausted(blockWhenExhausted);
-        config.setTimeBetweenEvictionRunsMillis(timeBetweenEvictionRunsMillis);
-        config.setTestWhileIdle(timeBetweenEvictionRunsMillis > 0);
+        config.setTestWhileIdle(!timeBetweenEvictionRuns.isNegative() && !timeBetweenEvictionRuns.isZero());
         // 默认设置获取和归还对象时进行可用性校验
         config.setTestOnBorrow(true);
         config.setTestOnReturn(true);
@@ -159,7 +205,7 @@ public class SftpPoolConfig {
     }
 
 
-    public static class Builder{
+    public static class Builder {
 
         private final SftpPoolConfig config = new SftpPoolConfig();
 
@@ -174,22 +220,22 @@ public class SftpPoolConfig {
         }
 
         public Builder setMaxWaitMillis(long maxWaitMillis) {
-            config.setMaxWaitMillis(maxWaitMillis);
+            config.setMaxWaitTime(Duration.ofMillis(maxWaitMillis));
             return this;
         }
 
-//        public Builder setEvictorShutdownTimeoutMillis(long evictorShutdownTimeoutMillis) {
-//            config.setEvictorShutdownTimeoutMillis(evictorShutdownTimeoutMillis);
-//            return this;
-//        }
+        public Builder setEvictorShutdownTimeoutMillis(long evictorShutdownTimeoutMillis) {
+            config.setEvictorShutdownTimeoutTime(Duration.ofMillis(evictorShutdownTimeoutMillis));
+            return this;
+        }
 
         public Builder setMinEvictableIdleTimeMillis(long minEvictableIdleTimeMillis) {
-            config.setMinEvictableIdleTimeMillis(minEvictableIdleTimeMillis);
+            config.setMinEvictableIdleTime(Duration.ofMillis(minEvictableIdleTimeMillis));
             return this;
         }
 
         public Builder setSoftMinEvictableIdleTimeMillis(long softMinEvictableIdleTimeMillis) {
-            config.setSoftMinEvictableIdleTimeMillis(softMinEvictableIdleTimeMillis);
+            config.setSoftMinEvictableIdleTime(Duration.ofMillis(softMinEvictableIdleTimeMillis));
             return this;
         }
 
@@ -210,7 +256,7 @@ public class SftpPoolConfig {
 
 
         public Builder setTimeBetweenEvictionRunsMillis(long timeBetweenEvictionRunsMillis) {
-            config.setTimeBetweenEvictionRunsMillis(timeBetweenEvictionRunsMillis);
+            config.setTimeBetweenEvictionRuns(Duration.ofMillis(timeBetweenEvictionRunsMillis));
             return this;
         }
 
@@ -239,7 +285,7 @@ public class SftpPoolConfig {
             return this;
         }
 
-        public SftpPoolConfig build(){
+        public SftpPoolConfig build() {
             return config;
         }
 

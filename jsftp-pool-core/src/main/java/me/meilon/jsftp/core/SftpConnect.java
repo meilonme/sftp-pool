@@ -30,21 +30,20 @@ public class SftpConnect implements Closeable {
 
     /**
      * 用于标识此链接是否通过链接池创建
+     * 为 true 在调用 close() 时会返回回连接池
+     * 为 false 在掉哟个 close() 时会直接关闭
      */
-    private boolean isPooledObject = false;
+    private final boolean isPooledObject;
 
-    protected SftpConnect(SftpConnConfig config, ChannelSftp sftp, Session session) {
+    protected SftpConnect(SftpConnConfig config, ChannelSftp sftp, Session session, boolean isPooledObject) {
         this.config = config;
         this.sftp = sftp;
         this.session = session;
+        this.isPooledObject = isPooledObject;
     }
 
     public boolean isPooledObject() {
         return isPooledObject;
-    }
-
-    protected void setPooledObject(boolean pooledObject) {
-        isPooledObject = pooledObject;
     }
 
     public String getId(){
@@ -309,7 +308,7 @@ public class SftpConnect implements Closeable {
     public void uploadFile(String filePath, String remotePath,
                            SftpMode mode) throws SftpException {
         remotePath = remoteAbsolutePath(filePath, remotePath);
-        sftp.put(filePath, remotePath, mode.getMode());
+        sftp.put(filePath, remotePath, mode.code);
     }
 
     /**

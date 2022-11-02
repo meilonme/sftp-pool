@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * sftp 连接池工厂
- * </p>
+ * <p>
  * 池化对象的状态定义在 {@link org.apache.commons.pool2.PooledObjectState} 枚举中，有以下值
  * IDLE 在池中，处于空闲状态
  * ALLOCATED 被使用中
@@ -71,7 +71,7 @@ public final class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String
 
     /**
      * 创建一个 sftp 链接, 此链接不会交给链接池管理
-     * </p>
+     * <p>
      * 注: 此工厂静态方法创建的 sftp 链接不会纳管到链接池中, 注意自行关闭
      * 此方法保留给特殊情况下使用, 不推荐使用;
      * 如果sftp服务端对链接有某些限制情况需要在使用完成后立即关闭, 建议在配置中使用 autoDisconnect
@@ -86,11 +86,11 @@ public final class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String
      */
     public static SftpConnect createConnect(String host, Integer port,
                                             String user, String password) throws JSchException {
-        return createConnect(host,port,user,password, null);
+        return createConnect(host,port,user,password, null, false);
     }
     private static SftpConnect createConnect(String host, Integer port,
                                             String user, String password,
-                                            String id) throws JSchException {
+                                            String id, boolean isPooled) throws JSchException {
         JSch jsch = new JSch();
         Properties sshConfig = new Properties();
         sshConfig.put("StrictHostKeyChecking", "no");
@@ -101,7 +101,7 @@ public final class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String
         ChannelSftp channel = (ChannelSftp) session.openChannel("sftp");
         channel.connect();
         SftpConnConfig conf = new SftpConnConfig(host, port, user, password, id);
-        return new SftpConnect(conf, channel, session);
+        return new SftpConnect(conf, channel, session, isPooled);
     }
 
 
@@ -121,7 +121,6 @@ public final class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String
             return;
         }
         pool.returnSftp(sftpConnect);
-
     }
 
     /**
@@ -263,7 +262,7 @@ public final class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String
         if (conf == null){
             throw new SftpConfigException("get sftpConfig is null! ");
         }
-        SftpConnect connect = createConnect(conf.getHost(), conf.getPort(), conf.getUserName(), conf.getPassword(), sftpId);
+        SftpConnect connect = createConnect(conf.getHost(), conf.getPort(), conf.getUserName(), conf.getPassword(), sftpId, true);
         // 如果没有设置 homePath, 则根据初始 pwd 设置
         String homePath = conf.getBasePath();
         if (homePath == null){
@@ -281,7 +280,6 @@ public final class SftpPooledFactory extends BaseKeyedPooledObjectFactory<String
      */
     @Override
     public PooledObject<SftpConnect> wrap(SftpConnect value) {
-        value.setPooledObject(true);
         return new SftpPooledObject(value);
     }
 

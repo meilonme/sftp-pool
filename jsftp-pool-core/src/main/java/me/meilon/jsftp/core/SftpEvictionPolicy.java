@@ -14,8 +14,8 @@ import org.apache.commons.pool2.impl.*;
  * <li>there are more than {@link GenericObjectPool#getMinIdle()} /
  *     {@link GenericKeyedObjectPoolConfig#getMinIdlePerKey()} idle objects in
  *     the pool and the object has been idle for longer than
- *     {@link GenericObjectPool#getSoftMinEvictableIdleTimeMillis()} /
- *     {@link GenericKeyedObjectPool#getSoftMinEvictableIdleTimeMillis()}
+ *     {@link GenericObjectPool#getSoftMinEvictableIdleDuration()} /
+ *     {@link GenericKeyedObjectPool#getSoftMinEvictableIdleDuration()}
  * </ul>
  * <p>
  * This class is immutable and thread-safe.
@@ -29,8 +29,9 @@ public class SftpEvictionPolicy implements EvictionPolicy<SftpConnect> {
     @Override
     public boolean evict(EvictionConfig config, PooledObject<SftpConnect> underTest, int idleCount) {
 
-        return (config.getIdleSoftEvictTime() < underTest.getIdleTimeMillis() &&
+        return (config.getIdleSoftEvictDuration().compareTo(underTest.getIdleDuration()) < 0 &&
                 config.getMinIdle() < idleCount) ||
-                config.getIdleEvictTime() < underTest.getIdleTimeMillis();
+                config.getIdleEvictDuration().compareTo(underTest.getIdleDuration()) < 0;
     }
+
 }

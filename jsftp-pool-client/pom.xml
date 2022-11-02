@@ -6,7 +6,7 @@
     <parent>
         <groupId>me.meilon.jsftp</groupId>
         <artifactId>jsftp-pool</artifactId>
-        <version>0.1.21</version>
+        <version>0.1.22</version>
     </parent>
     <artifactId>jsftp-pool-client</artifactId>
     <packaging>jar</packaging>
@@ -16,7 +16,7 @@
         <dependency>
             <groupId>me.meilon.jsftp</groupId>
             <artifactId>jsftp-pool-core</artifactId>
-            <version>0.1.21</version>
+            <version>0.1.22</version>
         </dependency>
     </dependencies>
 

@@ -20,13 +20,10 @@ public enum SftpMode {
      */
     APPEND(2);
 
-    int mode;
+    public final int code;
 
-    SftpMode(int mode) {
-        this.mode = mode;
+    SftpMode(int code) {
+        this.code = code;
     }
 
-    public int getMode() {
-        return mode;
-    }
 }

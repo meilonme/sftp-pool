@@ -34,6 +34,7 @@ public class SftpConnConfig {
     /**
      * 是否自动关闭链接
      * 如果设为 true, 则每次归还 sftp 链接到连接池的时候会自动关闭链接
+     * 默认 false
      */
     private boolean autoDisconnect = false;
 
